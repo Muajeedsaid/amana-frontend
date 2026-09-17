@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
@@ -345,19 +344,30 @@ export default function ArtisanProfilePage() {
   const profileData = (profile ?? {}) as ArtisanProfileDetail & {
     name?: unknown;
     fullName?: unknown;
+    businessName?: unknown;
     displayName?: unknown;
     email?: unknown;
     phone?: unknown;
     phoneNumber?: unknown;
+    whatsapp?: unknown;
     profilePhoto?: unknown;
     profileImage?: unknown;
     avatar?: unknown;
+    avatarUrl?: unknown;
     photo?: unknown;
     location?: unknown;
     address?: unknown;
     city?: unknown;
+    area?: unknown;
     state?: unknown;
     serviceArea?: unknown;
+    offerType?: unknown;
+    serviceIds?: unknown;
+    productIds?: unknown;
+    customOfferings?: unknown;
+    workingDays?: unknown;
+    openFrom?: unknown;
+    openTo?: unknown;
   };
 
   const artisanName =
@@ -366,6 +376,10 @@ export default function ArtisanProfilePage() {
     safeText(profileData?.displayName) ||
     categoryName;
 
+  const businessName = safeText(
+    profileData?.businessName,
+  );
+
   const artisanEmail =
     safeText(profileData?.email);
 
@@ -373,22 +387,80 @@ export default function ArtisanProfilePage() {
     safeText(profileData?.phone) ||
     safeText(profileData?.phoneNumber);
 
+  const artisanWhatsapp =
+    safeText(profileData?.whatsapp) || artisanPhone;
+
   const locationFromApi =
     formatLocation(profileData?.location);
 
+  const area = safeText(profileData?.area);
+  const city = safeText(profileData?.city);
+
   const readableLocation =
-    locationFromApi !== 'Location available'
+    [area, city].filter(Boolean).join(', ') ||
+    (locationFromApi !== 'Location available'
       ? locationFromApi
       : safeText(profileData?.address) ||
-        safeText(profileData?.city) ||
         safeText(profileData?.serviceArea) ||
-        'Kano, Northern Nigeria';
+        'Kano, Northern Nigeria');
 
   const profilePhoto =
+    safeText(profileData?.avatarUrl) ||
     safeText(profileData?.profilePhoto) ||
     safeText(profileData?.profileImage) ||
     safeText(profileData?.avatar) ||
     safeText(profileData?.photo);
+
+  /**
+   * What this artisan offers, grouped the same way the dashboard
+   * collects it: catalog services, catalog products, and anything
+   * they added themselves via "Add your own" (only shown once it has
+   * been approved — pending entries only appear on their own dashboard).
+   *
+   * Falls back to the older free-text `skills` array for accounts that
+   * haven't been through the new profile editor yet, so nothing on an
+   * existing profile disappears.
+   */
+  const offerType = safeText(profileData?.offerType, 'services');
+
+  const serviceIds = Array.isArray(profileData?.serviceIds)
+    ? (profileData.serviceIds as unknown[]).filter(
+        (x): x is string => typeof x === 'string',
+      )
+    : [];
+
+  const productIds = Array.isArray(profileData?.productIds)
+    ? (profileData.productIds as unknown[]).filter(
+        (x): x is string => typeof x === 'string',
+      )
+    : [];
+
+  const approvedCustomOfferings = Array.isArray(
+    profileData?.customOfferings,
+  )
+    ? (profileData.customOfferings as Array<Record<string, unknown>>).filter(
+        (o) => o?.status === 'approved',
+      )
+    : [];
+
+  const hasStructuredOfferings =
+    serviceIds.length > 0 ||
+    productIds.length > 0 ||
+    approvedCustomOfferings.length > 0;
+
+  const legacySkills = Array.isArray(profile?.skills)
+    ? profile!.skills
+    : [];
+
+  const workingDays = Array.isArray(profileData?.workingDays)
+    ? (profileData.workingDays as unknown[]).filter(
+        (x): x is string => typeof x === 'string',
+      )
+    : [];
+
+  const openFrom = safeText(profileData?.openFrom);
+  const openTo = safeText(profileData?.openTo);
+  const hasHours = workingDays.length > 0 && openFrom && openTo;
 
   const socialLinks = useMemo(
     () =>
@@ -484,6 +556,26 @@ export default function ArtisanProfilePage() {
 
     router.push(
       '/dashboard?section=messages',
+    );
+  }
+
+  function handleWhatsApp() {
+    if (!artisanWhatsapp) return;
+
+    const digits = artisanWhatsapp.replace(/[^\d]/g, '');
+    // Nigerian numbers typed locally start with 0; WhatsApp wants the
+    // country code instead.
+    const withCountryCode = digits.startsWith('0')
+      ? `234${digits.slice(1)}`
+      : digits;
+
+    const message = encodeURIComponent(
+      `Hello, I found your profile on Amana and I'd like to ask about ${categoryName.toLowerCase()} work.`,
+    );
+
+    window.open(
+      `https://wa.me/${withCountryCode}?text=${message}`,
+      '_blank',
     );
   }
 
@@ -611,7 +703,7 @@ export default function ArtisanProfilePage() {
               </h1>
 
               <p className="profile-enter-delay-2 mt-3 text-base font-semibold text-teal-900/55">
-                Professional {categoryName}
+                {businessName || `Professional ${categoryName}`}
               </p>
 
               <div className="profile-enter-delay-3 mt-5 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm text-teal-900/60 lg:justify-start">
@@ -658,6 +750,15 @@ export default function ArtisanProfilePage() {
                 >
                   Hire this artisan
                 </button>
+
+                {artisanWhatsapp && (
+                  <button
+                    onClick={handleWhatsApp}
+                    className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#25D366]/30 bg-[#25D366]/10 px-6 py-3.5 text-sm font-bold text-[#128C4A] transition hover:-translate-y-0.5 hover:bg-[#25D366]/15"
+                  >
+                    WhatsApp
+                  </button>
+                )}
 
                 <button
                   onClick={handleMessage}
@@ -744,6 +845,7 @@ export default function ArtisanProfilePage() {
                     label="Phone"
                     value={artisanPhone}
                     mark="TEL"
+                    href={`tel:${artisanPhone.replace(/\s+/g, '')}`}
                   />
                 )}
 
@@ -785,15 +887,89 @@ export default function ArtisanProfilePage() {
               </Section>
             )}
 
-          {/* Services */}
-          {Array.isArray(profile.skills) &&
-            profile.skills.length > 0 && (
+          {/* Working hours */}
+          {hasHours && (
+            <Section
+              title="Working hours"
+              eyebrow="When you can reach them"
+            >
+              <div className="rounded-2xl border border-teal-900/10 bg-white p-6 shadow-sm md:p-8">
+                <div className="flex flex-wrap gap-2">
+                  {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(
+                    (day) => {
+                      const open = workingDays.includes(day);
+
+                      return (
+                        <span
+                          key={day}
+                          className={`rounded-full px-3.5 py-1.5 text-xs font-bold ${
+                            open
+                              ? 'bg-teal-900 text-white'
+                              : 'bg-sand-50 text-teal-900/30 line-through'
+                          }`}
+                        >
+                          {day}
+                        </span>
+                      );
+                    },
+                  )}
+                </div>
+
+                <p className="mt-4 text-sm font-semibold text-teal-900">
+                  {openFrom} – {openTo}
+                </p>
+              </div>
+            </Section>
+          )}
+
+          {/* Services / Products offered */}
+          {hasStructuredOfferings ? (
+            <Section
+              title={
+                offerType === 'products'
+                  ? 'What they sell'
+                  : offerType === 'both'
+                  ? 'Services & products'
+                  : 'Services offered'
+              }
+              eyebrow="What they do"
+            >
+              <div className="space-y-6">
+                {serviceIds.length > 0 && (
+                  <OfferingGroup
+                    label="Services"
+                    items={serviceIds.map(serviceLabel)}
+                    mark={mark}
+                  />
+                )}
+
+                {productIds.length > 0 && (
+                  <OfferingGroup
+                    label="Products"
+                    items={productIds.map(productLabel)}
+                    mark="SHOP"
+                  />
+                )}
+
+                {approvedCustomOfferings.length > 0 && (
+                  <OfferingGroup
+                    label="Also offers"
+                    items={approvedCustomOfferings.map((o) =>
+                      safeText(o.name, 'Custom offering'),
+                    )}
+                    mark="+"
+                  />
+                )}
+              </div>
+            </Section>
+          ) : (
+            legacySkills.length > 0 && (
               <Section
                 title="Services offered"
                 eyebrow="What they do"
               >
                 <div className="grid gap-3 sm:grid-cols-2">
-                  {profile.skills.map(
+                  {legacySkills.map(
                     (skill, index) => {
                       const skillText =
                         safeText(
@@ -827,7 +1003,8 @@ export default function ArtisanProfilePage() {
                   )}
                 </div>
               </Section>
-            )}
+            )
+          )}
 
           {/* Experience */}
           {profile.yearsExperience > 0 && (
@@ -1149,6 +1326,9 @@ export default function ArtisanProfilePage() {
               }}
               onSubmit={handleBookingSubmit}
               onMessage={handleMessage}
+              onWhatsApp={
+                artisanWhatsapp ? handleWhatsApp : undefined
+              }
             />
 
             <div className="rounded-2xl border border-teal-900/10 bg-white p-5 shadow-sm">
@@ -1192,12 +1372,21 @@ export default function ArtisanProfilePage() {
           </div>
         ) : (
           <div className="mx-auto flex max-w-xl gap-2">
-            <button
-              onClick={handleMessage}
-              className="flex-1 rounded-xl border border-teal-900/15 bg-white px-4 py-3 text-sm font-bold text-teal-900"
-            >
-              Message
-            </button>
+            {artisanWhatsapp ? (
+              <button
+                onClick={handleWhatsApp}
+                className="flex-1 rounded-xl border border-[#25D366]/30 bg-[#25D366]/10 px-4 py-3 text-sm font-bold text-[#128C4A]"
+              >
+                WhatsApp
+              </button>
+            ) : (
+              <button
+                onClick={handleMessage}
+                className="flex-1 rounded-xl border border-teal-900/15 bg-white px-4 py-3 text-sm font-bold text-teal-900"
+              >
+                Message
+              </button>
+            )}
 
             <button
               onClick={openBooking}
@@ -1241,6 +1430,9 @@ export default function ArtisanProfilePage() {
               }}
               onSubmit={handleBookingSubmit}
               onMessage={handleMessage}
+              onWhatsApp={
+                artisanWhatsapp ? handleWhatsApp : undefined
+              }
             />
           </div>
         </div>
@@ -1276,6 +1468,93 @@ export default function ArtisanProfilePage() {
         </div>
       )}
     </main>
+  );
+}
+
+/**
+ * Label catalogs — mirror the ids used on the dashboard's offer picker,
+ * so a serviceId like "electrician" renders as "Electrical" here instead
+ * of a raw slug.
+ */
+const SERVICE_LABELS: Record<string, string> = {
+  plumber: 'Plumbing',
+  electrician: 'Electrical',
+  solar: 'Solar & inverters',
+  carpenter: 'Carpentry',
+  mason: 'Masonry',
+  painter: 'Painting',
+  welder: 'Welding',
+  'ac-technician': 'AC & refrigeration',
+  cleaner: 'Cleaning',
+  'phone-repair': 'Phone repair',
+  'computer-repair': 'Computer repair',
+  cctv: 'CCTV & security',
+  'generator-repair': 'Generator repair',
+  tailor: 'Tailoring',
+  barber: 'Barbing & grooming',
+  mechanic: 'Auto repair',
+  'panel-beater': 'Panel beating',
+};
+
+const PRODUCT_LABELS: Record<string, string> = {
+  phones: 'Phones',
+  'phone-accessories': 'Phone accessories',
+  computers: 'Computers & laptops',
+  'computer-accessories': 'Computer accessories',
+  electronics: 'Electronics',
+  shoes: 'Shoes',
+  clothing: 'Clothing & fabric',
+  bags: 'Bags',
+  furniture: 'Furniture',
+  'building-materials': 'Building materials',
+  'solar-equipment': 'Solar equipment',
+  'spare-parts': 'Vehicle spare parts',
+};
+
+function serviceLabel(id: string) {
+  return SERVICE_LABELS[id] || id.replace(/-/g, ' ');
+}
+
+function productLabel(id: string) {
+  return PRODUCT_LABELS[id] || id.replace(/-/g, ' ');
+}
+
+function OfferingGroup({
+  label,
+  items,
+  mark,
+}: {
+  label: string;
+  items: string[];
+  mark: string;
+}) {
+  return (
+    <div>
+      <p className="mb-3 text-xs font-bold uppercase tracking-[0.16em] text-teal-900/40">
+        {label}
+      </p>
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        {items.map((item, index) => (
+          <div
+            key={`${item}-${index}`}
+            className="group rounded-2xl border border-teal-900/10 bg-white p-5 shadow-sm transition duration-300 hover:-translate-y-1 hover:border-terracotta-600/30 hover:shadow-lg hover:shadow-teal-900/5"
+          >
+            <div className="flex items-center gap-4">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-sand-50 text-xs font-black tracking-wider text-teal-900 transition group-hover:bg-teal-900 group-hover:text-white">
+                {mark}
+              </div>
+
+              <div className="min-w-0">
+                <p className="font-semibold capitalize text-teal-900">
+                  {item}
+                </p>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -1347,28 +1626,45 @@ function InfoCard({
   label,
   value,
   mark,
+  href,
 }: {
   label: string;
   value: string;
   mark: string;
+  href?: string;
 }) {
+  const content = (
+    <div className="flex items-start gap-4">
+      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-sand-50 text-[10px] font-black text-teal-900">
+        {mark}
+      </div>
+
+      <div className="min-w-0">
+        <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-teal-900/35">
+          {label}
+        </p>
+
+        <p className="mt-1 break-words text-sm font-semibold text-teal-900">
+          {value}
+        </p>
+      </div>
+    </div>
+  );
+
+  if (href) {
+    return (
+      <a
+        href={href}
+        className="block rounded-2xl border border-teal-900/10 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-terracotta-600/30 hover:shadow-lg"
+      >
+        {content}
+      </a>
+    );
+  }
+
   return (
     <div className="rounded-2xl border border-teal-900/10 bg-white p-5 shadow-sm">
-      <div className="flex items-start gap-4">
-        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-sand-50 text-[10px] font-black text-teal-900">
-          {mark}
-        </div>
-
-        <div className="min-w-0">
-          <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-teal-900/35">
-            {label}
-          </p>
-
-          <p className="mt-1 break-words text-sm font-semibold text-teal-900">
-            {value}
-          </p>
-        </div>
-      </div>
+      {content}
     </div>
   );
 }
@@ -1442,6 +1738,7 @@ function BookingCard({
   onClose,
   onSubmit,
   onMessage,
+  onWhatsApp,
 }: {
   mobile?: boolean;
   categoryName: string;
@@ -1459,6 +1756,7 @@ function BookingCard({
     e: React.FormEvent<HTMLFormElement>,
   ) => void;
   onMessage: () => void;
+  onWhatsApp?: () => void;
 }) {
   return (
     <div
@@ -1584,11 +1882,20 @@ function BookingCard({
             Hire this artisan
           </button>
 
+          {onWhatsApp && (
+            <button
+              onClick={onWhatsApp}
+              className="w-full rounded-xl border border-[#25D366]/30 bg-[#25D366]/10 px-6 py-3.5 text-sm font-bold text-[#128C4A] transition hover:-translate-y-0.5 hover:bg-[#25D366]/15"
+            >
+              Message on WhatsApp
+            </button>
+          )}
+
           <button
             onClick={onMessage}
             className="w-full rounded-xl border border-teal-900/15 px-6 py-3.5 text-sm font-bold text-teal-900 transition hover:bg-sand-50"
           >
-            Message artisan
+            Message on Amana
           </button>
 
           <p className="pt-1 text-center text-[11px] leading-5 text-teal-900/40">
@@ -1705,4 +2012,3 @@ function ProfileStyles() {
     `}</style>
   );
 }
-
