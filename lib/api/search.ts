@@ -15,6 +15,16 @@ export interface ArtisanSearchResult {
     type: string;
     coordinates: [number, number];
   };
+
+  // These are already present in the raw Mongo document returned by
+  // the search aggregation — no backend change needed to expose them,
+  // just declaring them here so the frontend can use them.
+  fullName?: string;
+  businessName?: string;
+  avatarUrl?: string;
+  offerType?: 'services' | 'products' | 'both';
+  serviceIds?: string[];
+  productIds?: string[];
 }
 
 export interface SearchParams {

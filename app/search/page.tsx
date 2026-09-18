@@ -1155,12 +1155,11 @@ function SearchPageContent() {
 
                   {visibleResults.map(
                     (artisan, index) => {
-
-                      const displayName =
-                        artisan.businessName ||
-                        artisan.fullName ||
-                        artisan.tradeCategory ||
-                        'Professional artisan';
+                      
+                  const displayName =
+                   artisan.fullName ||
+                   artisan.tradeCategory ||
+                    'Professional artisan';
 
                       return (
                         <article
