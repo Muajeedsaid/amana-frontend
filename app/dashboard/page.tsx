@@ -19,6 +19,8 @@ import {
   ArtisanProfileDetail,
 } from '@/lib/api/profiles';
 
+import { useLanguage } from '@/lib/i18n/LanguageContext';
+
 /* =========================================================
    ICONS
 ========================================================= */
@@ -341,6 +343,14 @@ type PendingPhoto = {
 
 /* =========================================================
    CATALOGUES
+
+   NOTE: ids and canonical English `label`/`group` are kept exactly
+   as before — this data is also used to build the legacy `skills`
+   array sent to the backend (via labelFor), and to match older
+   accounts' free-text skills. Changing these risks breaking that.
+   Display translation happens separately via catalogLabel()/groupLabel()
+   below, keyed by `id`, so the UI can show Hausa without touching
+   the data that goes to the server.
 ========================================================= */
 
 const SERVICE_CATALOG: {
@@ -393,11 +403,32 @@ const ALL_GROUPS = Array.from(
   ])
 );
 
+/** Maps an English group string to its translation-dictionary key. */
+function groupKey(group: string): string {
+  switch (group) {
+    case 'Home & building':
+      return 'homeBuilding';
+    case 'Technology':
+      return 'technology';
+    case 'Personal':
+      return 'personal';
+    case 'Vehicles':
+      return 'vehicles';
+    case 'Fashion':
+      return 'fashion';
+    case 'Home':
+      return 'home';
+    default:
+      return group;
+  }
+}
+
 const WEEK_DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 const MAX_PHOTOS = 12;
 const MAX_FILE_MB = 12;
 
+/** Canonical English label — used for the data sent to the backend. */
 function labelFor(id: string) {
   return (
     SERVICE_CATALOG.find((c) => c.id === id)?.label ||
@@ -465,6 +496,8 @@ function validateImage(file: File): string | null {
     file.type.startsWith('image/') ||
     /\.(heic|heif)$/i.test(file.name);
 
+  // NOTE: kept in English — embeds the file name dynamically, needs
+  // real interpolation rather than a dictionary swap.
   if (!looksLikeImage) {
     return `${file.name} is not a photo.`;
   }
@@ -482,6 +515,7 @@ function validateImage(file: File): string | null {
 
 export default function DashboardPage() {
   const router = useRouter();
+  const { t } = useLanguage();
 
   const portfolioInputRef = useRef<HTMLInputElement>(null);
   const avatarInputRef = useRef<HTMLInputElement>(null);
@@ -572,6 +606,21 @@ export default function DashboardPage() {
   });
 
   const markDirty = () => setDirty(true);
+
+  /** Translated display label for a catalog item, by id. */
+  function catalogLabel(id: string) {
+    return t(`dashboard.catalog.items.${id}`);
+  }
+
+  /** Translated display label for a catalog group, by its English key. */
+  function groupLabel(group: string) {
+    return t(`dashboard.catalog.groups.${groupKey(group)}`);
+  }
+
+  /** Translated short label for a working day, by its English key. */
+  function dayLabel(day: string) {
+    return t(`dashboard.days.${day}`);
+  }
 
   /* =========================================================
      AUTH
@@ -736,19 +785,19 @@ export default function DashboardPage() {
 
   const checklist = useMemo(
     () => [
-      { label: 'Profile photo', complete: Boolean(avatarUrl) },
-      { label: 'Your name', complete: fullName.trim().length > 1 },
-      { label: 'Phone number', complete: phone.trim().length >= 10 },
+      { label: t('dashboard.checklist.profilePhoto'), complete: Boolean(avatarUrl) },
+      { label: t('dashboard.checklist.yourName'), complete: fullName.trim().length > 1 },
+      { label: t('dashboard.checklist.phoneNumber'), complete: phone.trim().length >= 10 },
       {
         label:
           offerType === 'products'
-            ? 'What you sell'
-            : 'Services you provide',
+            ? t('dashboard.checklist.whatYouSell')
+            : t('dashboard.checklist.servicesYouProvide'),
         complete:
           serviceIds.length + productIds.length + customOfferings.length > 0,
       },
-      { label: 'About your work', complete: bio.trim().length >= 30 },
-      { label: 'Photos of your work', complete: photos.length > 0 },
+      { label: t('dashboard.checklist.aboutYourWork'), complete: bio.trim().length >= 30 },
+      { label: t('dashboard.checklist.photosOfWork'), complete: photos.length > 0 },
     ],
     [
       avatarUrl,
@@ -760,6 +809,7 @@ export default function DashboardPage() {
       customOfferings,
       bio,
       photos,
+      t,
     ]
   );
 
@@ -819,7 +869,7 @@ export default function DashboardPage() {
 
       setMyProfile(updated);
     } catch (err: any) {
-      setAvailabilityError(err.message || 'Failed to update availability');
+      setAvailabilityError(err.message || t('dashboard.errors.updateAvailability'));
     } finally {
       setAvailabilityLoading(false);
     }
@@ -844,7 +894,7 @@ export default function DashboardPage() {
         )
       );
     } catch (err: any) {
-      setActionError(err.message || 'Failed to update booking');
+      setActionError(err.message || t('dashboard.errors.updateBooking'));
     } finally {
       setUpdatingId(null);
     }
@@ -863,6 +913,8 @@ export default function DashboardPage() {
 
     // Keep the legacy `skills` array in sync so the existing public
     // profile and search keep working while the backend catches up.
+    // Always uses the canonical English labelFor(), regardless of
+    // the UI language, so backend data stays consistent.
     const skills = [
       ...serviceIds.map(labelFor),
       ...productIds.map(labelFor),
@@ -898,7 +950,7 @@ export default function DashboardPage() {
 
       setTimeout(() => setProfileSaved(false), 3000);
     } catch (err: any) {
-      setProfileError(err.message || 'Failed to save your profile.');
+      setProfileError(err.message || t('dashboard.errors.saveProfile'));
     } finally {
       setProfileSaving(false);
     }
@@ -936,7 +988,7 @@ export default function DashboardPage() {
       markDirty();
     } catch (err: any) {
       setAvatarUrl('');
-      setAvatarError(err.message || 'Could not upload that photo.');
+      setAvatarError(err.message || t('dashboard.errors.uploadPhoto'));
     } finally {
       URL.revokeObjectURL(preview);
       setAvatarUploading(false);
@@ -963,6 +1015,8 @@ export default function DashboardPage() {
 
     const room = MAX_PHOTOS - photos.length - pending.length;
 
+    // NOTE: these dynamic (count-interpolated) messages are kept in
+    // English for now — see validateImage() comment above.
     if (room <= 0) {
       setUploadError(`You already have ${MAX_PHOTOS} photos. Remove one first.`);
       return;
@@ -1019,13 +1073,14 @@ export default function DashboardPage() {
         } catch (err: any) {
           patch({
             status: 'error',
-            error: err.message || 'Upload failed. Check your connection.',
+            error: err.message || t('dashboard.errors.uploadFailed'),
           });
         }
       })
     );
 
     if (uploaded > 0) {
+      // NOTE: kept in English — dynamic count.
       setUploadSuccess(
         `${uploaded} photo${uploaded === 1 ? '' : 's'} added. Save your profile to publish.`
       );
@@ -1113,7 +1168,7 @@ export default function DashboardPage() {
       setReviewedIds((previous) => [...previous, bookingId]);
       setReviewingId(null);
     } catch (err: any) {
-      setReviewError(err.message || 'Failed to submit review');
+      setReviewError(err.message || t('dashboard.errors.submitReview'));
     } finally {
       setReviewSubmitting(false);
     }
@@ -1130,7 +1185,7 @@ export default function DashboardPage() {
           <div className="h-10 w-10 rounded-full border-2 border-[#0F4C45]/20 border-t-[#C85A3F] animate-spin" />
 
           <p className="text-sm text-[#0F4C45]/70">
-            Loading your dashboard...
+            {t('dashboard.loadingDashboard')}
           </p>
         </div>
       </main>
@@ -1147,18 +1202,18 @@ export default function DashboardPage() {
     icon: Parameters<typeof Icon>[0]['name'];
     badge?: number;
   }[] = [
-    { id: 'overview', label: 'Dashboard', icon: 'home' },
+    { id: 'overview', label: t('dashboard.nav.dashboard'), icon: 'home' },
     {
       id: 'jobs',
-      label: 'Jobs',
+      label: t('dashboard.nav.jobs'),
       icon: 'briefcase',
       badge: newRequests || undefined,
     },
-    { id: 'messages', label: 'Messages', icon: 'message' },
-    { id: 'profile', label: 'My Profile', icon: 'user' },
-    { id: 'portfolio', label: 'Portfolio', icon: 'image' },
-    { id: 'reviews', label: 'Reviews', icon: 'star' },
-    { id: 'settings', label: 'Settings', icon: 'settings' },
+    { id: 'messages', label: t('dashboard.nav.messages'), icon: 'message' },
+    { id: 'profile', label: t('dashboard.nav.myProfile'), icon: 'user' },
+    { id: 'portfolio', label: t('dashboard.nav.portfolio'), icon: 'image' },
+    { id: 'reviews', label: t('dashboard.nav.reviews'), icon: 'star' },
+    { id: 'settings', label: t('dashboard.nav.settings'), icon: 'settings' },
   ];
 
   /* =========================================================
@@ -1225,12 +1280,14 @@ export default function DashboardPage() {
 
               <div className="min-w-0">
                 <p className="text-sm font-semibold truncate">
-                  {fullName || 'Artisan Account'}
+                  {fullName || t('dashboard.sidebar.artisanAccount')}
                 </p>
 
                 <p className="text-xs text-white/50 mt-0.5 truncate">
                   {businessName ||
-                    (isArtisan ? 'Professional Artisan' : 'Customer')}
+                    (isArtisan
+                      ? t('dashboard.sidebar.professionalArtisan')
+                      : t('dashboard.sidebar.customer'))}
                 </p>
               </div>
             </div>
@@ -1238,7 +1295,7 @@ export default function DashboardPage() {
             {isArtisan && myProfile && (
               <div className="mt-4 pt-4 border-t border-white/10">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-white/50">Profile strength</span>
+                  <span className="text-white/50">{t('dashboard.sidebar.profileStrength')}</span>
 
                   <span className="text-[#D5A63A] font-semibold">
                     {profileCompletion}%
@@ -1258,7 +1315,7 @@ export default function DashboardPage() {
 
         <nav className="px-3 flex-1 overflow-y-auto">
           <p className="px-3 mb-3 text-[10px] uppercase tracking-[0.18em] text-white/35">
-            Workspace
+            {t('dashboard.sidebar.workspace')}
           </p>
 
           <div className="space-y-1">
@@ -1301,7 +1358,7 @@ export default function DashboardPage() {
             className="flex items-center gap-3 px-3 py-3 rounded-xl text-sm text-white/60 hover:text-white hover:bg-white/5 transition"
           >
             <Icon name="help" size={18} />
-            Help &amp; Support
+            {t('dashboard.sidebar.helpSupport')}
           </Link>
 
           <button
@@ -1309,7 +1366,7 @@ export default function DashboardPage() {
             className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm text-white/60 hover:text-white hover:bg-white/5 transition"
           >
             <Icon name="logout" size={18} />
-            Logout
+            {t('dashboard.sidebar.logout')}
           </button>
         </div>
       </aside>
@@ -1333,23 +1390,23 @@ export default function DashboardPage() {
 
           <div>
             <p className="hidden sm:block text-[10px] uppercase tracking-[0.2em] text-[#C85A3F] font-semibold">
-              Amana workspace
+              {t('dashboard.topbar.workspace')}
             </p>
 
             <h1 className="font-display text-xl sm:text-2xl text-[#083A35]">
               {activeSection === 'overview'
-                ? 'Dashboard'
+                ? t('dashboard.nav.dashboard')
                 : activeSection === 'jobs'
-                ? 'Jobs'
+                ? t('dashboard.nav.jobs')
                 : activeSection === 'messages'
-                ? 'Messages'
+                ? t('dashboard.nav.messages')
                 : activeSection === 'profile'
-                ? 'My Profile'
+                ? t('dashboard.nav.myProfile')
                 : activeSection === 'portfolio'
-                ? 'Portfolio'
+                ? t('dashboard.nav.portfolio')
                 : activeSection === 'reviews'
-                ? 'Reviews'
-                : 'Settings'}
+                ? t('dashboard.nav.reviews')
+                : t('dashboard.nav.settings')}
             </h1>
           </div>
         </div>
@@ -1357,7 +1414,7 @@ export default function DashboardPage() {
         <div className="flex items-center gap-2 sm:gap-3">
           <button
             className="h-10 w-10 rounded-xl border border-[#0F4C45]/10 bg-white text-[#0F4C45] flex items-center justify-center hover:border-[#0F4C45]/30 transition"
-            title="Notifications"
+            title={t('dashboard.topbar.notifications')}
           >
             <Icon name="bell" size={18} />
           </button>
@@ -1370,7 +1427,7 @@ export default function DashboardPage() {
               className="hidden sm:flex items-center gap-2 h-10 px-4 rounded-xl bg-[#0F4C45] text-white text-sm hover:bg-[#083A35] transition"
             >
               <Icon name="eye" size={16} />
-              View profile
+              {t('dashboard.topbar.viewProfile')}
             </button>
           )}
         </div>
@@ -1477,7 +1534,7 @@ export default function DashboardPage() {
                   onClick={() => dismissPending(item.key)}
                   className="mt-2 text-[10px] underline"
                 >
-                  Dismiss
+                  {t('dashboard.customOffering.cancel')}
                 </button>
               </div>
             ) : (
@@ -1486,8 +1543,8 @@ export default function DashboardPage() {
 
                 <span className="text-[10px] text-white font-medium">
                   {item.status === 'preparing'
-                    ? 'Preparing'
-                    : 'Uploading'}
+                    ? t('common.loading')
+                    : t('dashboard.booking.updating')}
                 </span>
               </div>
             )}
@@ -1527,13 +1584,15 @@ export default function DashboardPage() {
           </div>
 
           <p className="text-base sm:text-lg font-semibold text-[#083A35]">
-            {full ? `You have ${MAX_PHOTOS} photos` : 'Add photos of your work'}
+            {full
+              ? `You have ${MAX_PHOTOS} photos`
+              : t('dashboard.uploadDropzone.addPhotosOfWork')}
           </p>
 
           <p className="text-sm text-[#60736F]">
             {full
-              ? 'Remove one to add another.'
-              : 'Tap to open your camera or gallery'}
+              ? t('dashboard.uploadDropzone.removeOneToAdd')
+              : t('dashboard.uploadDropzone.tapToOpen')}
           </p>
         </button>
 
@@ -1572,18 +1631,17 @@ export default function DashboardPage() {
 
           <div className="relative max-w-2xl">
             <p className="text-[#D5A63A] text-xs uppercase tracking-[0.18em] font-semibold mb-3">
-              Welcome to your workspace
+              {t('dashboard.overview.welcomeEyebrow')}
             </p>
 
             <h2 className="font-display text-3xl sm:text-4xl lg:text-5xl leading-tight">
-              Build your reputation.
+              {t('dashboard.overview.heroLine1')}
               <br />
-              Grow your work.
+              {t('dashboard.overview.heroLine2')}
             </h2>
 
             <p className="mt-4 text-white/65 max-w-xl text-sm sm:text-base leading-7">
-              Manage your customer requests, showcase your work, update your
-              profile and keep track of your jobs from one place.
+              {t('dashboard.overview.heroSubtitle')}
             </p>
 
             <div className="mt-6 flex flex-wrap gap-3">
@@ -1591,7 +1649,7 @@ export default function DashboardPage() {
                 onClick={() => navigateTo('jobs')}
                 className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-[#C85A3F] hover:bg-[#A94632] text-white text-sm font-semibold transition-all hover:-translate-y-0.5"
               >
-                View jobs
+                {t('dashboard.overview.viewJobs')}
                 <Icon name="arrow" size={16} />
               </button>
 
@@ -1599,7 +1657,7 @@ export default function DashboardPage() {
                 onClick={() => navigateTo('profile')}
                 className="inline-flex items-center gap-2 px-5 py-3 rounded-xl border border-white/20 hover:bg-white/10 text-white text-sm font-semibold transition"
               >
-                Edit profile
+                {t('dashboard.overview.editProfile')}
               </button>
             </div>
           </div>
@@ -1618,11 +1676,11 @@ export default function DashboardPage() {
 
             <div className="min-w-0">
               <p className="font-semibold text-[#083A35]">
-                Next: add {nextStep.label.toLowerCase()}
+                {t('dashboard.overview.nextStepPrefix')} {nextStep.label.toLowerCase()}
               </p>
 
               <p className="text-sm text-[#60736F] mt-0.5">
-                Customers are far more likely to contact a complete profile.
+                {t('dashboard.overview.nextStepHint')}
               </p>
             </div>
           </button>
@@ -1630,28 +1688,28 @@ export default function DashboardPage() {
 
         <section className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           <StatCard
-            label="New requests"
+            label={t('dashboard.overview.statNewRequests')}
             value={newRequests}
             icon="briefcase"
             action={() => navigateTo('jobs')}
           />
 
           <StatCard
-            label="Active jobs"
+            label={t('dashboard.overview.statActiveJobs')}
             value={activeJobs}
             icon="clock"
             action={() => navigateTo('jobs')}
           />
 
           <StatCard
-            label="Completed"
+            label={t('dashboard.overview.statCompleted')}
             value={completedJobs}
             icon="check"
             action={() => navigateTo('jobs')}
           />
 
           <StatCard
-            label="Rating"
+            label={t('dashboard.overview.statRating')}
             value={
               myProfile && myProfile.ratingCount > 0
                 ? myProfile.ratingAvg.toFixed(1)
@@ -1673,16 +1731,15 @@ export default function DashboardPage() {
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <p className="text-xs uppercase tracking-[0.16em] text-[#C85A3F] font-semibold">
-                    Profile strength
+                    {t('dashboard.overview.profileStrengthEyebrow')}
                   </p>
 
                   <h3 className="font-display text-2xl text-[#083A35] mt-2">
-                    Complete your profile
+                    {t('dashboard.overview.completeProfileTitle')}
                   </h3>
 
                   <p className="text-sm text-[#60736F] mt-2 max-w-xl leading-6">
-                    A complete profile gives customers more information before
-                    they decide to contact you.
+                    {t('dashboard.overview.completeProfileDesc')}
                   </p>
                 </div>
 
@@ -1731,14 +1788,14 @@ export default function DashboardPage() {
                 onClick={() => navigateTo('profile')}
                 className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-[#C85A3F] hover:text-[#A94632]"
               >
-                Improve your profile
+                {t('dashboard.overview.improveProfile')}
                 <Icon name="arrow" size={15} />
               </button>
             </div>
 
             <div className="bg-white rounded-3xl border border-[#0F4C45]/10 p-6 sm:p-7">
               <p className="text-xs uppercase tracking-[0.16em] text-[#C85A3F] font-semibold">
-                Availability
+                {t('dashboard.overview.availabilityEyebrow')}
               </p>
 
               <div className="mt-5 flex items-center gap-3">
@@ -1752,13 +1809,13 @@ export default function DashboardPage() {
 
                 <span className="font-semibold text-[#083A35]">
                   {myProfile.isAvailable
-                    ? 'Available for work'
-                    : 'Currently unavailable'}
+                    ? t('dashboard.overview.availableForWork')
+                    : t('dashboard.overview.currentlyUnavailable')}
                 </span>
               </div>
 
               <p className="text-sm text-[#60736F] leading-6 mt-4">
-                Let customers know whether you are currently accepting new work.
+                {t('dashboard.overview.availabilityHint')}
               </p>
 
               <button
@@ -1774,10 +1831,10 @@ export default function DashboardPage() {
                 `}
               >
                 {availabilityLoading
-                  ? 'Updating...'
+                  ? t('dashboard.overview.updating')
                   : myProfile.isAvailable
-                  ? 'Mark unavailable'
-                  : 'Mark available'}
+                  ? t('dashboard.overview.markUnavailable')
+                  : t('dashboard.overview.markAvailable')}
               </button>
 
               {availabilityError && (
@@ -1791,11 +1848,11 @@ export default function DashboardPage() {
           <div className="px-6 py-5 border-b border-[#0F4C45]/10 flex items-center justify-between">
             <div>
               <p className="text-xs uppercase tracking-[0.16em] text-[#C85A3F] font-semibold">
-                Recent activity
+                {t('dashboard.overview.recentActivityEyebrow')}
               </p>
 
               <h3 className="font-display text-2xl text-[#083A35] mt-1">
-                Recent jobs
+                {t('dashboard.overview.recentJobs')}
               </h3>
             </div>
 
@@ -1803,7 +1860,7 @@ export default function DashboardPage() {
               onClick={() => navigateTo('jobs')}
               className="hidden sm:flex items-center gap-1 text-sm font-semibold text-[#C85A3F]"
             >
-              View all
+              {t('dashboard.overview.viewAll')}
               <Icon name="chevron" size={15} />
             </button>
           </div>
@@ -1815,12 +1872,14 @@ export default function DashboardPage() {
               <EmptyState
                 icon="briefcase"
                 title={
-                  isArtisan ? 'No job requests yet' : 'No bookings yet'
+                  isArtisan
+                    ? t('dashboard.overview.noJobRequestsYet')
+                    : t('dashboard.overview.noBookingsYet')
                 }
                 description={
                   isArtisan
-                    ? 'When customers request your services, their requests will appear here.'
-                    : 'Your requested services will appear here.'
+                    ? t('dashboard.overview.noJobRequestsDesc')
+                    : t('dashboard.overview.noBookingsDesc')
                 }
               />
             ) : (
@@ -1852,12 +1911,12 @@ export default function DashboardPage() {
     return (
       <div className="space-y-6 animate-page">
         <SectionHeader
-          eyebrow="Work management"
-          title={isArtisan ? 'Manage your jobs' : 'Your bookings'}
+          eyebrow={t('dashboard.jobs.eyebrow')}
+          title={isArtisan ? t('dashboard.jobs.manageJobs') : t('dashboard.jobs.yourBookings')}
           description={
             isArtisan
-              ? 'Review customer requests, accept jobs and keep your work moving.'
-              : 'Track the services you have requested.'
+              ? t('dashboard.jobs.descArtisan')
+              : t('dashboard.jobs.descCustomer')
           }
         />
 
@@ -1868,19 +1927,19 @@ export default function DashboardPage() {
         )}
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <MiniStat label="Requested" value={statusCounts.requested || 0} />
-          <MiniStat label="Accepted" value={statusCounts.accepted || 0} />
+          <MiniStat label={t('dashboard.jobs.requested')} value={statusCounts.requested || 0} />
+          <MiniStat label={t('dashboard.jobs.accepted')} value={statusCounts.accepted || 0} />
           <MiniStat
-            label="In progress"
+            label={t('dashboard.jobs.inProgress')}
             value={statusCounts.in_progress || 0}
           />
-          <MiniStat label="Completed" value={statusCounts.completed || 0} />
+          <MiniStat label={t('dashboard.jobs.completed')} value={statusCounts.completed || 0} />
         </div>
 
         <section className="bg-white rounded-3xl border border-[#0F4C45]/10 overflow-hidden">
           <div className="p-5 sm:p-6 border-b border-[#0F4C45]/10">
             <h3 className="font-display text-2xl text-[#083A35]">
-              {isArtisan ? 'Customer requests' : 'Booking history'}
+              {isArtisan ? t('dashboard.jobs.customerRequests') : t('dashboard.jobs.bookingHistory')}
             </h3>
           </div>
 
@@ -1890,11 +1949,11 @@ export default function DashboardPage() {
             ) : bookings.length === 0 ? (
               <EmptyState
                 icon="briefcase"
-                title="Nothing here yet"
+                title={t('dashboard.jobs.nothingHereYet')}
                 description={
                   isArtisan
-                    ? 'New customer requests will appear here.'
-                    : 'Your booking activity will appear here.'
+                    ? t('dashboard.jobs.newRequestsDesc')
+                    : t('dashboard.jobs.bookingActivityDesc')
                 }
               />
             ) : (
@@ -1935,17 +1994,17 @@ export default function DashboardPage() {
     return (
       <div className="space-y-6 animate-page">
         <SectionHeader
-          eyebrow="Communication"
-          title="Messages"
-          description="Communicate with customers about their work and bookings."
+          eyebrow={t('dashboard.messages.eyebrow')}
+          title={t('dashboard.messages.title')}
+          description={t('dashboard.messages.desc')}
         />
 
         <section className="bg-white rounded-3xl border border-[#0F4C45]/10 min-h-[500px] flex items-center justify-center p-8">
           <EmptyState
             icon="message"
-            title="No conversations yet"
-            description="Customer conversations will appear here when messaging is connected to your account."
-            actionLabel="Go to jobs"
+            title={t('dashboard.messages.noConversationsYet')}
+            description={t('dashboard.messages.noConversationsDesc')}
+            actionLabel={t('dashboard.messages.goToJobs')}
             onAction={() => navigateTo('jobs')}
           />
         </section>
@@ -1962,16 +2021,16 @@ export default function DashboardPage() {
       return (
         <div className="space-y-6 animate-page">
           <SectionHeader
-            eyebrow="Your account"
-            title="My Profile"
-            description="Your customer profile settings."
+            eyebrow={t('dashboard.profile.customerEyebrow')}
+            title={t('dashboard.profile.customerTitle')}
+            description={t('dashboard.profile.customerDesc')}
           />
 
           <section className="bg-white rounded-3xl border border-[#0F4C45]/10 p-8">
             <EmptyState
               icon="user"
-              title="Customer profile"
-              description="Your customer profile tools can be managed here."
+              title={t('dashboard.profile.customerProfileTitle')}
+              description={t('dashboard.profile.customerProfileDesc')}
             />
           </section>
         </div>
@@ -1985,9 +2044,9 @@ export default function DashboardPage() {
     return (
       <div className="space-y-6 animate-page">
         <SectionHeader
-          eyebrow="Public identity"
-          title="Edit your profile"
-          description="This is what customers see when they find you on Amana."
+          eyebrow={t('dashboard.profile.publicIdentityEyebrow')}
+          title={t('dashboard.profile.editYourProfile')}
+          description={t('dashboard.profile.editProfileDesc')}
         />
 
         <form onSubmit={handleProfileSave} className="space-y-6">
@@ -1995,8 +2054,8 @@ export default function DashboardPage() {
 
           <section className="bg-white rounded-3xl border border-[#0F4C45]/10 p-6 sm:p-8">
             <FormTitle
-              title="Who you are"
-              description="Your photo and name are the first things a customer sees. They decide whether to call you."
+              title={t('dashboard.profile.whoYouAreTitle')}
+              description={t('dashboard.profile.whoYouAreDesc')}
             />
 
             {/* PROFILE PHOTO */}
@@ -2018,7 +2077,7 @@ export default function DashboardPage() {
                 ) : (
                   <span className="h-full w-full flex flex-col items-center justify-center gap-1.5 text-[#0F4C45]/45">
                     <Icon name="camera" size={26} />
-                    <span className="text-[11px] font-medium">Add photo</span>
+                    <span className="text-[11px] font-medium">{t('dashboard.profile.addPhoto')}</span>
                   </span>
                 )}
 
@@ -2036,12 +2095,11 @@ export default function DashboardPage() {
                   className="inline-flex items-center gap-2 px-5 py-3 rounded-xl border border-[#0F4C45]/20 text-[#083A35] text-sm font-semibold hover:border-[#0F4C45]/45 transition"
                 >
                   <Icon name="camera" size={17} />
-                  {avatarUrl ? 'Change photo' : 'Add your photo'}
+                  {avatarUrl ? t('dashboard.profile.changePhoto') : t('dashboard.profile.addYourPhoto')}
                 </button>
 
                 <p className="mt-2.5 text-sm text-[#60736F] leading-6 max-w-sm">
-                  A clear photo of your face works best. Customers use it to
-                  recognise you when you arrive.
+                  {t('dashboard.profile.photoHint')}
                 </p>
 
                 {avatarError && (
@@ -2055,7 +2113,7 @@ export default function DashboardPage() {
             <div className="mt-8 grid sm:grid-cols-2 gap-5">
               <div>
                 <label className="form-label" htmlFor="field-fullname">
-                  Full name
+                  {t('dashboard.profile.fullNameLabel')}
                 </label>
 
                 <input
@@ -2067,14 +2125,14 @@ export default function DashboardPage() {
                     setFullName(event.target.value);
                     markDirty();
                   }}
-                  placeholder="Mujaheed Said"
+                  placeholder={t('dashboard.profile.fullNamePlaceholder')}
                   className="form-input"
                 />
               </div>
 
               <div>
                 <label className="form-label" htmlFor="field-business">
-                  Business name
+                  {t('dashboard.profile.businessNameLabel')}
                 </label>
 
                 <input
@@ -2085,18 +2143,18 @@ export default function DashboardPage() {
                     setBusinessName(event.target.value);
                     markDirty();
                   }}
-                  placeholder="Mujaheed Electrical Services"
+                  placeholder={t('dashboard.profile.businessNamePlaceholder')}
                   className="form-input"
                 />
 
                 <p className="mt-2 text-xs text-[#60736F]">
-                  Leave this blank if you work under your own name.
+                  {t('dashboard.profile.businessNameHint')}
                 </p>
               </div>
 
               <div>
                 <label className="form-label" htmlFor="field-phone">
-                  Phone number
+                  {t('dashboard.profile.phoneLabel')}
                 </label>
 
                 <input
@@ -2109,14 +2167,14 @@ export default function DashboardPage() {
                     setPhone(event.target.value);
                     markDirty();
                   }}
-                  placeholder="0803 000 0000"
+                  placeholder={t('dashboard.profile.phonePlaceholder')}
                   className="form-input"
                 />
               </div>
 
               <div>
                 <label className="form-label" htmlFor="field-whatsapp">
-                  WhatsApp number
+                  {t('dashboard.profile.whatsappLabel')}
                 </label>
 
                 <input
@@ -2128,18 +2186,18 @@ export default function DashboardPage() {
                     setWhatsapp(event.target.value);
                     markDirty();
                   }}
-                  placeholder="Same as your phone number"
+                  placeholder={t('dashboard.profile.whatsappPlaceholder')}
                   className="form-input"
                 />
 
                 <p className="mt-2 text-xs text-[#60736F]">
-                  Most customers message before they call.
+                  {t('dashboard.profile.whatsappHint')}
                 </p>
               </div>
 
               <div>
                 <label className="form-label" htmlFor="field-city">
-                  City
+                  {t('dashboard.profile.cityLabel')}
                 </label>
 
                 <input
@@ -2156,7 +2214,7 @@ export default function DashboardPage() {
 
               <div>
                 <label className="form-label" htmlFor="field-area">
-                  Area
+                  {t('dashboard.profile.areaLabel')}
                 </label>
 
                 <input
@@ -2167,18 +2225,18 @@ export default function DashboardPage() {
                     setArea(event.target.value);
                     markDirty();
                   }}
-                  placeholder="Sabon Gari"
+                  placeholder={t('dashboard.profile.areaPlaceholder')}
                   className="form-input"
                 />
 
                 <p className="mt-2 text-xs text-[#60736F]">
-                  Where you are based, so nearby customers can find you.
+                  {t('dashboard.profile.areaHint')}
                 </p>
               </div>
 
               <div>
                 <label className="form-label" htmlFor="field-years">
-                  Years of experience
+                  {t('dashboard.profile.yearsLabel')}
                 </label>
 
                 <input
@@ -2199,7 +2257,7 @@ export default function DashboardPage() {
 
             <div className="mt-6">
               <label className="form-label" htmlFor="field-bio">
-                About your work
+                {t('dashboard.profile.bioLabel')}
               </label>
 
               <textarea
@@ -2211,12 +2269,12 @@ export default function DashboardPage() {
                   markDirty();
                 }}
                 rows={6}
-                placeholder="I am an electrician with 6 years of experience. I do house wiring, solar installation and generator repair around Kano."
+                placeholder={t('dashboard.profile.bioPlaceholder')}
                 className="form-input resize-y"
               />
 
               <div className="mt-2 flex justify-between text-xs text-[#60736F]">
-                <span>Write plainly. Say what you do and who you do it for.</span>
+                <span>{t('dashboard.profile.bioHint')}</span>
                 <span>{bio.length}/600</span>
               </div>
             </div>
@@ -2226,8 +2284,8 @@ export default function DashboardPage() {
 
           <section className="bg-white rounded-3xl border border-[#0F4C45]/10 p-6 sm:p-8">
             <FormTitle
-              title="What you offer"
-              description="Amana is for anyone with a skill or a shop, not only tradespeople."
+              title={t('dashboard.profile.whatYouOfferTitle')}
+              description={t('dashboard.profile.whatYouOfferDesc')}
             />
 
             <div className="mt-6 grid sm:grid-cols-3 gap-3">
@@ -2236,20 +2294,20 @@ export default function DashboardPage() {
                   {
                     id: 'services' as OfferType,
                     icon: 'briefcase' as const,
-                    title: 'Services',
-                    body: 'You do work for customers: repairs, installation, tailoring.',
+                    title: t('dashboard.profile.offerServicesTitle'),
+                    body: t('dashboard.profile.offerServicesBody'),
                   },
                   {
                     id: 'products' as OfferType,
                     icon: 'store' as const,
-                    title: 'Products',
-                    body: 'You sell things: phones, shoes, spare parts, furniture.',
+                    title: t('dashboard.profile.offerProductsTitle'),
+                    body: t('dashboard.profile.offerProductsBody'),
                   },
                   {
                     id: 'both' as OfferType,
                     icon: 'shield' as const,
-                    title: 'Both',
-                    body: 'You sell and you also repair or install.',
+                    title: t('dashboard.profile.offerBothTitle'),
+                    body: t('dashboard.profile.offerBothBody'),
                   },
                 ]
               ).map((option) => {
@@ -2309,25 +2367,29 @@ export default function DashboardPage() {
             {showsServices && (
               <div className="mt-8">
                 <p className="font-semibold text-[#083A35]">
-                  Services you provide
+                  {t('dashboard.profile.servicesYouProvide')}
                 </p>
 
                 <CatalogPicker
                   catalog={SERVICE_CATALOG}
                   selected={serviceIds}
                   onToggle={toggleService}
+                  catalogLabel={catalogLabel}
+                  groupLabel={groupLabel}
                 />
               </div>
             )}
 
             {showsProducts && (
               <div className="mt-8">
-                <p className="font-semibold text-[#083A35]">Things you sell</p>
+                <p className="font-semibold text-[#083A35]">{t('dashboard.profile.thingsYouSell')}</p>
 
                 <CatalogPicker
                   catalog={PRODUCT_CATALOG}
                   selected={productIds}
                   onToggle={toggleProduct}
+                  catalogLabel={catalogLabel}
+                  groupLabel={groupLabel}
                 />
               </div>
             )}
@@ -2343,8 +2405,8 @@ export default function DashboardPage() {
 
           <section className="bg-white rounded-3xl border border-[#0F4C45]/10 p-6 sm:p-8">
             <FormTitle
-              title="Photos of your work"
-              description="Photos do more than any description. Show finished jobs, your workshop or your stock."
+              title={t('dashboard.profile.photosTitle')}
+              description={t('dashboard.profile.photosDesc')}
             />
 
             <UploadDropzone />
@@ -2355,8 +2417,8 @@ export default function DashboardPage() {
 
           <section className="bg-white rounded-3xl border border-[#0F4C45]/10 p-6 sm:p-8">
             <FormTitle
-              title="When you work"
-              description="Customers avoid calling outside your hours."
+              title={t('dashboard.profile.whenYouWorkTitle')}
+              description={t('dashboard.profile.whenYouWorkDesc')}
             />
 
             <div className="mt-6 flex flex-wrap gap-2">
@@ -2378,7 +2440,7 @@ export default function DashboardPage() {
                       }
                     `}
                   >
-                    {day}
+                    {dayLabel(day)}
                   </button>
                 );
               })}
@@ -2387,7 +2449,7 @@ export default function DashboardPage() {
             <div className="mt-6 grid grid-cols-2 gap-4 max-w-sm">
               <div>
                 <label className="form-label" htmlFor="field-open-from">
-                  Open from
+                  {t('dashboard.profile.openFrom')}
                 </label>
 
                 <input
@@ -2404,7 +2466,7 @@ export default function DashboardPage() {
 
               <div>
                 <label className="form-label" htmlFor="field-open-to">
-                  Close at
+                  {t('dashboard.profile.closeAt')}
                 </label>
 
                 <input
@@ -2425,8 +2487,8 @@ export default function DashboardPage() {
 
           <section className="bg-white rounded-3xl border border-[#0F4C45]/10 p-6 sm:p-8">
             <FormTitle
-              title="Social links"
-              description="Optional. Shown on your public profile so customers can see more of your work."
+              title={t('dashboard.profile.socialTitle')}
+              description={t('dashboard.profile.socialDesc')}
             />
 
             <div className="mt-6 grid sm:grid-cols-3 gap-5">
@@ -2490,20 +2552,20 @@ export default function DashboardPage() {
 
           <section className="bg-white rounded-3xl border border-[#0F4C45]/10 p-6 sm:p-8">
             <FormTitle
-              title="Work availability"
-              description="Control whether customers can see you as available for new work."
+              title={t('dashboard.profile.availabilityTitle')}
+              description={t('dashboard.profile.availabilityDesc')}
             />
 
             <div className="mt-6 flex items-center justify-between gap-5 rounded-2xl bg-[#F8F3E8] p-5">
               <div>
                 <p className="font-semibold text-[#083A35]">
-                  Accepting new work
+                  {t('dashboard.profile.acceptingWork')}
                 </p>
 
                 <p className="text-sm text-[#60736F] mt-1">
                   {myProfile?.isAvailable
-                    ? 'Customers can see that you are available.'
-                    : 'Customers will see that you are currently unavailable.'}
+                    ? t('dashboard.profile.customersSeeAvailable')
+                    : t('dashboard.profile.customersSeeUnavailable')}
                 </p>
               </div>
 
@@ -2545,15 +2607,15 @@ export default function DashboardPage() {
                     <span className="h-5 w-5 rounded-full bg-[#0F4C45] text-white flex items-center justify-center">
                       <Icon name="check" size={12} />
                     </span>
-                    Profile saved.
+                    {t('dashboard.profile.profileSaved')}
                   </p>
                 )}
 
                 {!profileError && !profileSaved && (
                   <p className="text-[#60736F]">
                     {dirty
-                      ? 'You have unsaved changes.'
-                      : 'Everything is saved.'}
+                      ? t('dashboard.profile.unsavedChanges')
+                      : t('dashboard.profile.everythingSaved')}
                   </p>
                 )}
               </div>
@@ -2566,7 +2628,7 @@ export default function DashboardPage() {
                     className="hidden sm:inline-flex items-center gap-2 px-4 py-3 rounded-xl border border-[#0F4C45]/15 text-[#083A35] text-sm font-semibold hover:border-[#0F4C45]/40 transition"
                   >
                     <Icon name="eye" size={16} />
-                    Preview
+                    {t('dashboard.profile.preview')}
                   </Link>
                 )}
 
@@ -2576,7 +2638,7 @@ export default function DashboardPage() {
                   className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-[#C85A3F] hover:bg-[#A94632] disabled:opacity-60 text-white text-sm font-semibold transition"
                 >
                   <Icon name="save" size={16} />
-                  {profileSaving ? 'Saving...' : 'Save profile'}
+                  {profileSaving ? t('dashboard.profile.saving') : t('dashboard.profile.saveProfile')}
                 </button>
               </div>
             </div>
@@ -2594,21 +2656,20 @@ export default function DashboardPage() {
     return (
       <div className="space-y-6 animate-page">
         <SectionHeader
-          eyebrow="Show your work"
-          title="Portfolio"
-          description="Your portfolio is where customers see the quality of your actual work."
+          eyebrow={t('dashboard.portfolio.eyebrow')}
+          title={t('dashboard.portfolio.title')}
+          description={t('dashboard.portfolio.desc')}
         />
 
         <section className="bg-white rounded-3xl border border-[#0F4C45]/10 p-6 sm:p-8">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <h3 className="font-display text-2xl text-[#083A35]">
-                Work samples
+                {t('dashboard.portfolio.workSamples')}
               </h3>
 
               <p className="text-sm text-[#60736F] mt-1">
-                {photos.length} photo{photos.length !== 1 ? 's' : ''} in your
-                portfolio
+                {photos.length} photo{photos.length !== 1 ? 's' : ''} {t('dashboard.portfolio.inYourPortfolio')}
               </p>
             </div>
 
@@ -2618,7 +2679,7 @@ export default function DashboardPage() {
               className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-[#C85A3F] text-white text-sm font-semibold hover:bg-[#A94632] transition"
             >
               <Icon name="plus" size={17} />
-              Add photos
+              {t('dashboard.portfolio.addPhotos')}
             </button>
           </div>
 
@@ -2641,10 +2702,10 @@ export default function DashboardPage() {
               >
                 <Icon name="save" size={16} />
                 {profileSaving
-                  ? 'Saving...'
+                  ? t('dashboard.profile.saving')
                   : dirty
-                  ? 'Save portfolio'
-                  : 'Portfolio saved'}
+                  ? t('dashboard.portfolio.savePortfolio')
+                  : t('dashboard.portfolio.portfolioSaved')}
               </button>
             </div>
           )}
@@ -2657,13 +2718,11 @@ export default function DashboardPage() {
 
           <div>
             <h4 className="font-semibold text-[#083A35]">
-              Make your portfolio useful
+              {t('dashboard.portfolio.tipTitle')}
             </h4>
 
             <p className="text-sm text-[#60736F] mt-1 leading-6">
-              Use clear photos of finished work, in good light, showing
-              different kinds of jobs. Photos taken on your own phone work
-              better than pictures from the internet.
+              {t('dashboard.portfolio.tipDesc')}
             </p>
           </div>
         </div>
@@ -2684,15 +2743,15 @@ export default function DashboardPage() {
     return (
       <div className="space-y-6 animate-page">
         <SectionHeader
-          eyebrow="Customer feedback"
-          title="Reviews"
-          description="Your customer feedback helps people understand what it is like to work with you."
+          eyebrow={t('dashboard.reviews.eyebrow')}
+          title={t('dashboard.reviews.title')}
+          description={t('dashboard.reviews.desc')}
         />
 
         <section className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <div className="bg-[#0F4C45] text-white rounded-3xl p-6">
             <p className="text-white/50 text-xs uppercase tracking-wider">
-              Average rating
+              {t('dashboard.reviews.averageRating')}
             </p>
 
             <div className="flex items-end gap-2 mt-4">
@@ -2701,14 +2760,16 @@ export default function DashboardPage() {
             </div>
 
             <p className="text-sm text-white/50 mt-2">
-              {myProfile?.ratingCount || 0} review
-              {(myProfile?.ratingCount || 0) !== 1 ? 's' : ''}
+              {myProfile?.ratingCount || 0}{' '}
+              {(myProfile?.ratingCount || 0) === 1
+                ? t('dashboard.reviews.review')
+                : t('dashboard.reviews.reviewsPlural')}
             </p>
           </div>
 
           <div className="bg-white border border-[#0F4C45]/10 rounded-3xl p-6">
             <p className="text-[#60736F] text-xs uppercase tracking-wider">
-              Reputation
+              {t('dashboard.reviews.reputationLabel')}
             </p>
 
             <div className="mt-5 flex items-center gap-3">
@@ -2718,11 +2779,11 @@ export default function DashboardPage() {
 
               <div>
                 <p className="font-semibold text-[#083A35]">
-                  Keep delivering great work
+                  {t('dashboard.reviews.keepDelivering')}
                 </p>
 
                 <p className="text-xs text-[#60736F] mt-1">
-                  Completed jobs can lead to customer reviews.
+                  {t('dashboard.reviews.completedJobsLead')}
                 </p>
               </div>
             </div>
@@ -2730,7 +2791,7 @@ export default function DashboardPage() {
 
           <div className="bg-white border border-[#0F4C45]/10 rounded-3xl p-6">
             <p className="text-[#60736F] text-xs uppercase tracking-wider">
-              Completed work
+              {t('dashboard.reviews.completedWorkLabel')}
             </p>
 
             <p className="font-display text-4xl text-[#083A35] mt-4">
@@ -2738,21 +2799,21 @@ export default function DashboardPage() {
             </p>
 
             <p className="text-xs text-[#60736F] mt-2">
-              Completed jobs recorded on Amana.
+              {t('dashboard.reviews.completedJobsRecorded')}
             </p>
           </div>
         </section>
 
         <section className="bg-white rounded-3xl border border-[#0F4C45]/10 p-6 sm:p-8">
           <h3 className="font-display text-2xl text-[#083A35]">
-            Customer reviews
+            {t('dashboard.reviews.customerReviews')}
           </h3>
 
           <div className="mt-8">
             <EmptyState
               icon="star"
-              title="Reviews will appear here"
-              description="When customers leave reviews for your completed jobs, their feedback will be displayed in this section."
+              title={t('dashboard.reviews.reviewsWillAppear')}
+              description={t('dashboard.reviews.reviewsWillAppearDesc')}
             />
           </div>
         </section>
@@ -2768,9 +2829,9 @@ export default function DashboardPage() {
     return (
       <div className="space-y-6 animate-page">
         <SectionHeader
-          eyebrow="Account control"
-          title="Settings"
-          description="Manage notifications, visibility and your account preferences."
+          eyebrow={t('dashboard.settings.eyebrow')}
+          title={t('dashboard.settings.title')}
+          description={t('dashboard.settings.desc')}
         />
 
         <section className="bg-white rounded-3xl border border-[#0F4C45]/10 overflow-hidden">
@@ -2782,19 +2843,19 @@ export default function DashboardPage() {
 
               <div>
                 <h3 className="font-display text-xl text-[#083A35]">
-                  Notifications
+                  {t('dashboard.settings.notificationsTitle')}
                 </h3>
 
                 <p className="text-sm text-[#60736F] mt-1">
-                  Choose which updates you want to receive.
+                  {t('dashboard.settings.notificationsDesc')}
                 </p>
               </div>
             </div>
 
             <div className="mt-6 divide-y divide-[#0F4C45]/10">
               <SettingRow
-                title="Booking notifications"
-                description="Get notified when a customer requests or updates a job."
+                title={t('dashboard.settings.bookingNotifTitle')}
+                description={t('dashboard.settings.bookingNotifDesc')}
                 enabled={settings.bookingNotifications}
                 onChange={(value) =>
                   setSettings((previous) => ({
@@ -2805,8 +2866,8 @@ export default function DashboardPage() {
               />
 
               <SettingRow
-                title="Message notifications"
-                description="Receive alerts when someone sends you a message."
+                title={t('dashboard.settings.messageNotifTitle')}
+                description={t('dashboard.settings.messageNotifDesc')}
                 enabled={settings.messageNotifications}
                 onChange={(value) =>
                   setSettings((previous) => ({
@@ -2817,8 +2878,8 @@ export default function DashboardPage() {
               />
 
               <SettingRow
-                title="Email notifications"
-                description="Receive important account updates by email."
+                title={t('dashboard.settings.emailNotifTitle')}
+                description={t('dashboard.settings.emailNotifDesc')}
                 enabled={settings.emailNotifications}
                 onChange={(value) =>
                   setSettings((previous) => ({
@@ -2838,18 +2899,18 @@ export default function DashboardPage() {
 
               <div>
                 <h3 className="font-display text-xl text-[#083A35]">
-                  Profile visibility
+                  {t('dashboard.settings.visibilityTitle')}
                 </h3>
 
                 <p className="text-sm text-[#60736F] mt-1">
-                  Control whether customers can discover your profile.
+                  {t('dashboard.settings.visibilityDesc')}
                 </p>
               </div>
             </div>
 
             <SettingRow
-              title="Show my public profile"
-              description="Allow customers to discover your artisan profile."
+              title={t('dashboard.settings.showProfileTitle')}
+              description={t('dashboard.settings.showProfileDesc')}
               enabled={settings.profileVisible}
               onChange={(value) =>
                 setSettings((previous) => ({
@@ -2867,17 +2928,17 @@ export default function DashboardPage() {
               </div>
 
               <div>
-                <h3 className="font-display text-xl text-[#083A35]">Account</h3>
+                <h3 className="font-display text-xl text-[#083A35]">{t('dashboard.settings.accountTitle')}</h3>
 
                 <p className="text-sm text-[#60736F] mt-1">
-                  Your account information and security.
+                  {t('dashboard.settings.accountDesc')}
                 </p>
               </div>
             </div>
 
             <div className="mt-6 space-y-3">
               <div className="rounded-2xl bg-[#F8F3E8] p-4">
-                <p className="text-xs text-[#60736F]">Account ID</p>
+                <p className="text-xs text-[#60736F]">{t('dashboard.settings.accountId')}</p>
 
                 <p className="text-sm text-[#083A35] font-medium mt-1 break-all">
                   {user?.userId}
@@ -2885,7 +2946,7 @@ export default function DashboardPage() {
               </div>
 
               <div className="rounded-2xl bg-[#F8F3E8] p-4">
-                <p className="text-xs text-[#60736F]">Account role</p>
+                <p className="text-xs text-[#60736F]">{t('dashboard.settings.accountRole')}</p>
 
                 <p className="text-sm text-[#083A35] font-medium mt-1 capitalize">
                   {user?.role}
@@ -2898,7 +2959,7 @@ export default function DashboardPage() {
               className="mt-6 inline-flex items-center gap-2 px-5 py-3 rounded-xl border border-red-200 text-red-600 hover:bg-red-50 text-sm font-semibold transition"
             >
               <Icon name="logout" size={17} />
-              Logout
+              {t('dashboard.settings.logout')}
             </button>
           </div>
         </section>
@@ -3014,17 +3075,17 @@ export default function DashboardPage() {
         <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 px-3 pb-3">
           <div className="bg-[#083A35]/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl p-2 grid grid-cols-5 gap-1">
             {[
-              { id: 'overview' as Section, label: 'Home', icon: 'home' as const },
-              { id: 'jobs' as Section, label: 'Jobs', icon: 'briefcase' as const },
+              { id: 'overview' as Section, label: t('dashboard.mobileNav.home'), icon: 'home' as const },
+              { id: 'jobs' as Section, label: t('dashboard.mobileNav.jobs'), icon: 'briefcase' as const },
               {
                 id: 'portfolio' as Section,
-                label: 'Photos',
+                label: t('dashboard.mobileNav.photos'),
                 icon: 'image' as const,
               },
-              { id: 'profile' as Section, label: 'Profile', icon: 'user' as const },
+              { id: 'profile' as Section, label: t('dashboard.mobileNav.profile'), icon: 'user' as const },
               {
                 id: 'settings' as Section,
-                label: 'More',
+                label: t('dashboard.mobileNav.more'),
                 icon: 'settings' as const,
               },
             ].map((item) => (
@@ -3062,10 +3123,14 @@ function CatalogPicker({
   catalog,
   selected,
   onToggle,
+  catalogLabel,
+  groupLabel,
 }: {
   catalog: { id: string; label: string; group: string }[];
   selected: string[];
   onToggle: (id: string) => void;
+  catalogLabel: (id: string) => string;
+  groupLabel: (group: string) => string;
 }) {
   const groups = useMemo(() => {
     const map = new Map<string, typeof catalog>();
@@ -3081,7 +3146,7 @@ function CatalogPicker({
     <div className="mt-4 space-y-5">
       {groups.map(([group, entries]) => (
         <div key={group}>
-          <p className="text-xs text-[#60736F] mb-2.5">{group}</p>
+          <p className="text-xs text-[#60736F] mb-2.5">{groupLabel(group)}</p>
 
           <div className="flex flex-wrap gap-2">
             {entries.map((entry) => {
@@ -3102,7 +3167,7 @@ function CatalogPicker({
                     }
                   `}
                 >
-                  {entry.label}
+                  {catalogLabel(entry.id)}
                 </button>
               );
             })}
@@ -3131,6 +3196,7 @@ function CustomOfferingForm({
   onAdd: (offering: CustomOffering) => void;
   onRemove: (index: number) => void;
 }) {
+  const { t } = useLanguage();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState('');
   const [category, setCategory] = useState('');
@@ -3140,12 +3206,12 @@ function CustomOfferingForm({
 
   async function submit() {
     if (name.trim().length < 3) {
-      setError('Give it a name a customer would search for.');
+      setError(t('dashboard.customOffering.errorName'));
       return;
     }
 
     if (!category) {
-      setError('Choose the closest category.');
+      setError(t('dashboard.customOffering.errorCategory'));
       return;
     }
 
@@ -3185,7 +3251,7 @@ function CustomOfferingForm({
       setDescription('');
       setOpen(false);
     } catch {
-      setError('Could not send that. Try again.');
+      setError(t('dashboard.customOffering.errorGeneric'));
     } finally {
       setBusy(false);
     }
@@ -3208,8 +3274,8 @@ function CustomOfferingForm({
                 <p className="text-xs text-[#60736F] mt-0.5">
                   {offering.category} &middot;{' '}
                   {offering.status === 'pending'
-                    ? 'waiting for review'
-                    : 'live in search'}
+                    ? t('dashboard.customOffering.waitingReview')
+                    : t('dashboard.customOffering.liveInSearch')}
                 </p>
               </div>
 
@@ -3229,12 +3295,11 @@ function CustomOfferingForm({
       {!open ? (
         <div>
           <p className="font-semibold text-[#083A35]">
-            Can&apos;t find what you do?
+            {t('dashboard.customOffering.cantFind')}
           </p>
 
           <p className="text-sm text-[#60736F] mt-1 leading-6 max-w-xl">
-            Add it yourself. It appears on your profile immediately, and we
-            make it searchable once we have checked it.
+            {t('dashboard.customOffering.addYourself')}
           </p>
 
           <button
@@ -3243,14 +3308,14 @@ function CustomOfferingForm({
             className="mt-4 inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-[#C85A3F] hover:bg-[#A94632] text-white text-sm font-semibold transition"
           >
             <Icon name="plus" size={16} />
-            Add your own
+            {t('dashboard.customOffering.addYourOwn')}
           </button>
         </div>
       ) : (
         <div className="space-y-5">
           <div>
             <label className="form-label" htmlFor="custom-name">
-              What do you call this work?
+              {t('dashboard.customOffering.nameLabel')}
             </label>
 
             <input
@@ -3258,14 +3323,14 @@ function CustomOfferingForm({
               type="text"
               value={name}
               onChange={(event) => setName(event.target.value)}
-              placeholder="CCTV installation"
+              placeholder={t('dashboard.customOffering.namePlaceholder')}
               className="form-input"
             />
           </div>
 
           <div>
             <label className="form-label" htmlFor="custom-category">
-              Closest category
+              {t('dashboard.customOffering.categoryLabel')}
             </label>
 
             <select
@@ -3274,11 +3339,11 @@ function CustomOfferingForm({
               onChange={(event) => setCategory(event.target.value)}
               className="form-input"
             >
-              <option value="">Choose one</option>
+              <option value="">{t('dashboard.customOffering.chooseOne')}</option>
 
               {ALL_GROUPS.map((group) => (
                 <option key={group} value={group}>
-                  {group}
+                  {t(`dashboard.catalog.groups.${groupKey(group)}`)}
                 </option>
               ))}
             </select>
@@ -3286,7 +3351,7 @@ function CustomOfferingForm({
 
           <div>
             <label className="form-label" htmlFor="custom-description">
-              Describe it in one sentence
+              {t('dashboard.customOffering.descriptionLabel')}
             </label>
 
             <textarea
@@ -3294,7 +3359,7 @@ function CustomOfferingForm({
               rows={3}
               value={description}
               onChange={(event) => setDescription(event.target.value)}
-              placeholder="I install and maintain CCTV cameras for homes and shops."
+              placeholder={t('dashboard.customOffering.descriptionPlaceholder')}
               className="form-input resize-y"
             />
           </div>
@@ -3308,7 +3373,7 @@ function CustomOfferingForm({
               disabled={busy}
               className="px-5 py-3 rounded-xl bg-[#0F4C45] hover:bg-[#083A35] disabled:opacity-60 text-white text-sm font-semibold transition"
             >
-              {busy ? 'Adding...' : 'Add to my profile'}
+              {busy ? t('dashboard.customOffering.adding') : t('dashboard.customOffering.addToProfile')}
             </button>
 
             <button
@@ -3316,7 +3381,7 @@ function CustomOfferingForm({
               onClick={() => setOpen(false)}
               className="px-5 py-3 rounded-xl border border-[#0F4C45]/15 text-[#083A35] text-sm font-semibold"
             >
-              Cancel
+              {t('dashboard.customOffering.cancel')}
             </button>
           </div>
         </div>
@@ -3506,7 +3571,17 @@ function BookingCard({
   onSubmitReview?: (event: React.FormEvent, bookingId: string) => void;
   onCancelReview?: () => void;
 }) {
-  const statusLabel = booking.status.replace(/_/g, ' ');
+  const { t } = useLanguage();
+
+  const statusKeyMap: Record<string, string> = {
+    requested: 'dashboard.booking.statusRequested',
+    accepted: 'dashboard.booking.statusAccepted',
+    in_progress: 'dashboard.booking.statusInProgress',
+    completed: 'dashboard.booking.statusCompleted',
+    cancelled: 'dashboard.booking.statusCancelled',
+  };
+
+  const statusLabel = t(statusKeyMap[booking.status] || booking.status);
 
   const statusStyles: Record<string, string> = {
     requested: 'bg-[#FFF3E8] text-[#A94632] border-[#C85A3F]/15',
@@ -3540,7 +3615,7 @@ function BookingCard({
             </span>
           </div>
 
-          <h4 className="font-semibold text-[#083A35] mt-3">Service request</h4>
+          <h4 className="font-semibold text-[#083A35] mt-3">{t('dashboard.booking.serviceRequest')}</h4>
 
           <p className="text-sm text-[#60736F] mt-1 leading-6">
             {booking.description}
@@ -3555,7 +3630,7 @@ function BookingCard({
                 disabled={updatingId === booking._id}
                 className="px-4 py-2.5 rounded-xl bg-[#C85A3F] hover:bg-[#A94632] disabled:opacity-60 text-white text-xs font-semibold transition"
               >
-                {updatingId === booking._id ? 'Updating...' : 'Accept'}
+                {updatingId === booking._id ? t('dashboard.booking.updating') : t('dashboard.booking.accept')}
               </button>
 
               <button
@@ -3563,7 +3638,7 @@ function BookingCard({
                 disabled={updatingId === booking._id}
                 className="px-4 py-2.5 rounded-xl border border-[#0F4C45]/15 text-[#083A35] hover:border-[#0F4C45]/30 text-xs font-semibold transition"
               >
-                Decline
+                {t('dashboard.booking.decline')}
               </button>
             </>
           )}
@@ -3574,7 +3649,7 @@ function BookingCard({
               disabled={updatingId === booking._id}
               className="px-4 py-2.5 rounded-xl bg-[#C85A3F] hover:bg-[#A94632] disabled:opacity-60 text-white text-xs font-semibold transition"
             >
-              {updatingId === booking._id ? 'Updating...' : 'Start job'}
+              {updatingId === booking._id ? t('dashboard.booking.updating') : t('dashboard.booking.startJob')}
             </button>
           )}
 
@@ -3584,7 +3659,7 @@ function BookingCard({
               disabled={updatingId === booking._id}
               className="px-4 py-2.5 rounded-xl bg-[#0F4C45] hover:bg-[#083A35] disabled:opacity-60 text-white text-xs font-semibold transition"
             >
-              {updatingId === booking._id ? 'Updating...' : 'Mark completed'}
+              {updatingId === booking._id ? t('dashboard.booking.updating') : t('dashboard.booking.markCompleted')}
             </button>
           )}
         </div>
@@ -3597,7 +3672,7 @@ function BookingCard({
               <span className="h-6 w-6 rounded-full bg-[#0F4C45] text-white flex items-center justify-center">
                 <Icon name="check" size={13} />
               </span>
-              Review submitted. Thank you.
+              {t('dashboard.booking.reviewSubmitted')}
             </p>
           ) : reviewingId === booking._id ? (
             <form
@@ -3606,7 +3681,7 @@ function BookingCard({
             >
               <div>
                 <p className="text-sm font-semibold text-[#083A35]">
-                  How was the job?
+                  {t('dashboard.booking.howWasJob')}
                 </p>
 
                 <div className="flex gap-1 mt-3">
@@ -3631,7 +3706,7 @@ function BookingCard({
               <textarea
                 value={reviewComment || ''}
                 onChange={(event) => setReviewComment?.(event.target.value)}
-                placeholder="Tell us about your experience. Your comment is optional."
+                placeholder={t('dashboard.booking.commentPlaceholder')}
                 rows={4}
                 className="form-input"
               />
@@ -3646,7 +3721,7 @@ function BookingCard({
                   disabled={reviewSubmitting}
                   className="px-4 py-2.5 rounded-xl bg-[#C85A3F] text-white text-xs font-semibold disabled:opacity-60"
                 >
-                  {reviewSubmitting ? 'Submitting...' : 'Submit review'}
+                  {reviewSubmitting ? t('dashboard.booking.submitting') : t('dashboard.booking.submitReview')}
                 </button>
 
                 <button
@@ -3654,7 +3729,7 @@ function BookingCard({
                   onClick={onCancelReview}
                   className="px-4 py-2.5 rounded-xl border border-[#0F4C45]/15 text-[#083A35] text-xs font-semibold"
                 >
-                  Cancel
+                  {t('dashboard.booking.cancel')}
                 </button>
               </div>
             </form>
@@ -3664,7 +3739,7 @@ function BookingCard({
               className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[#C85A3F]/30 text-[#C85A3F] hover:bg-[#FFF3E8] text-xs font-semibold transition"
             >
               <Icon name="star" size={14} />
-              Leave a review
+              {t('dashboard.booking.leaveReview')}
             </button>
           )}
         </div>
@@ -3718,11 +3793,13 @@ function EmptyState({
 ========================================================= */
 
 function LoadingBlock() {
+  const { t } = useLanguage();
+
   return (
     <div className="py-12 flex flex-col items-center justify-center">
       <div className="h-9 w-9 rounded-full border-2 border-[#0F4C45]/15 border-t-[#C85A3F] animate-spin" />
 
-      <p className="text-sm text-[#60736F] mt-4">Loading...</p>
+      <p className="text-sm text-[#60736F] mt-4">{t('common.loading')}</p>
     </div>
   );
 }

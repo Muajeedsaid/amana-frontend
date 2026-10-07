@@ -3,37 +3,44 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { searchArtisans, ArtisanSearchResult } from '@/lib/api/search';
+import { useLanguage } from '@/lib/i18n/LanguageContext';
 
+/**
+ * Only ids and image seeds live here. All visible text comes from
+ * translations (catalog.<value> for the name, home.catDesc.<value> for the blurb).
+ *
+ * The `value` strings are the SAME ids the search page and the dashboard use,
+ * so clicking a card now returns real results.
+ */
 const CATEGORIES = [
-  { label: 'Plumbing', value: 'plumber', image: 'plumbing-pipes', description: 'Leaks, pipes, bathrooms and water systems.' },
-  { label: 'Electrical', value: 'electrician', image: 'electrical-wiring', description: 'Wiring, installations, repairs and maintenance.' },
-  { label: 'Solar', value: 'solar technician', image: 'solar-panels', description: 'Solar panels, inverters, batteries and setup.' },
-  { label: 'Carpentry', value: 'carpenter', image: 'carpentry-wood', description: 'Furniture, doors, cabinets and woodwork.' },
-  { label: 'Tailoring', value: 'tailor', image: 'tailoring-fabric', description: 'Custom clothes, alterations and traditional wear.' },
-  { label: 'Auto Repair', value: 'mechanic', image: 'auto-mechanic', description: 'Vehicle repairs, servicing and diagnostics.' },
-  { label: 'Painting', value: 'painter', image: 'wall-painting', description: 'Interior, exterior and decorative painting.' },
-  { label: 'Masonry', value: 'mason', image: 'masonry-brick', description: 'Building, blocks, plastering and renovations.' },
-  { label: 'AC & Refrigeration', value: 'ac technician', image: 'ac-repair', description: 'Air conditioners, fridges and cooling systems.' },
-  { label: 'Welding', value: 'welder', image: 'welding-metal', description: 'Metalwork, gates, frames and fabrication.' },
-  { label: 'Cleaning', value: 'cleaner', image: 'home-cleaning', description: 'Home, office and commercial cleaning services.' },
-  { label: 'Phone Repair', value: 'phone technician', image: 'phone-repair', description: 'Phone repairs, screens, batteries and software.' },
+  { value: 'plumber', image: 'plumbing-pipes' },
+  { value: 'electrician', image: 'electrical-wiring' },
+  { value: 'solar', image: 'solar-panels' },
+  { value: 'carpenter', image: 'carpentry-wood' },
+  { value: 'tailor', image: 'tailoring-fabric' },
+  { value: 'mechanic', image: 'auto-mechanic' },
+  { value: 'painter', image: 'wall-painting' },
+  { value: 'mason', image: 'masonry-brick' },
+  { value: 'ac-technician', image: 'ac-repair' },
+  { value: 'welder', image: 'welding-metal' },
+  { value: 'cleaner', image: 'home-cleaning' },
+  { value: 'phone-repair', image: 'phone-repair' },
 ];
 
 const HOW_IT_WORKS = [
-  { number: '01', title: 'Choose a service', description: 'Tell Amana what kind of work you need. Start with a service instead of trying to guess an artisan.' },
-  { number: '02', title: 'Find nearby artisans', description: 'Explore artisans around your area and compare their profiles, work, ratings and experience.' },
-  { number: '03', title: 'Choose who to hire', description: 'Visit an artisan profile, look through their work and send a booking request when you are ready.' },
-  { number: '04', title: 'Get the job done', description: 'Complete the job through Amana and share your experience with a review when it is finished.' },
-];
+  { number: '01', key: 's1' },
+  { number: '02', key: 's2' },
+  { number: '03', key: 's3' },
+  { number: '04', key: 's4' },
+] as const;
 
-const TRUST_POINTS = [
-  { title: 'See the work first', description: 'Artisan profiles can showcase photos of their work so customers can understand their skills before contacting them.' },
-  { title: 'Built around local discovery', description: 'Amana is designed to make finding skilled people nearby easier, starting with Kano.' },
-  { title: 'A structured hiring flow', description: 'Customers can move from discovering an artisan to sending a booking request through a clear process.' },
-  { title: 'Made for Northern Nigeria', description: 'Amana starts in Kano with the goal of making local skilled work easier to discover across Nigeria.' },
-];
+const TRUST_POINTS = ['p1', 'p2', 'p3', 'p4'] as const;
+
+const ARTISAN_BENEFITS = ['b1', 'b2', 'b3', 'b4'] as const;
 
 export default function Home() {
+  const { t, tOr } = useLanguage();
+
   const [artisans, setArtisans] = useState<ArtisanSearchResult[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -53,6 +60,10 @@ export default function Home() {
       }))
     )
     .slice(0, 8);
+
+  /** Translates a trade id from the API; falls back to the raw value if unknown. */
+  const tradeLabel = (trade?: string) =>
+    trade ? tOr(`catalog.${trade}`, trade) : '';
 
   return (
     <main className="min-h-screen overflow-x-hidden bg-sand-50 text-teal-900">
@@ -75,21 +86,20 @@ export default function Home() {
             <div className="mb-7 inline-flex items-center gap-2 rounded-full border border-terracotta-600/20 bg-white px-4 py-2 shadow-sm">
               <span className="h-2 w-2 animate-pulse rounded-full bg-terracotta-600" />
               <span className="font-body text-xs font-bold uppercase tracking-[0.18em] text-terracotta-600">
-                Starting in Kano
+                {t('home.hero.badge')}
               </span>
             </div>
 
             <h1 className="font-display max-w-3xl text-5xl leading-[1.05] text-teal-900 sm:text-6xl lg:text-7xl">
-              Skilled people.
+              {t('home.hero.title1')}
               <br />
-              <span className="relative inline-block text-terracotta-600">Real work.</span>
+              <span className="relative inline-block text-terracotta-600">{t('home.hero.title2')}</span>
               <br />
-              Right where you need them.
+              {t('home.hero.title3')}
             </h1>
 
             <p className="mt-7 max-w-2xl font-body text-lg leading-8 text-teal-800/70 sm:text-xl">
-              Find local artisans for the work you need, from plumbing and
-              electrical repairs to tailoring, carpentry, solar and more.
+              {t('home.hero.subtitle')}
             </p>
 
             <div className="mt-9 flex flex-col gap-3 sm:flex-row">
@@ -97,7 +107,7 @@ export default function Home() {
                 href="/search"
                 className="group inline-flex items-center justify-center gap-3 rounded-xl bg-terracotta-600 px-7 py-4 font-body font-bold text-white shadow-xl shadow-terracotta-600/20 transition-all duration-300 hover:-translate-y-1 hover:bg-terracotta-700 hover:shadow-2xl"
               >
-                Find an Artisan
+                {t('home.hero.ctaFind')}
                 <span className="transition-transform duration-300 group-hover:translate-x-1">-&gt;</span>
               </Link>
 
@@ -105,14 +115,14 @@ export default function Home() {
                 href="#services"
                 className="inline-flex items-center justify-center rounded-xl border-2 border-teal-900/10 bg-white px-7 py-4 font-body font-bold text-teal-900 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-teal-900/20 hover:shadow-lg"
               >
-                Explore Services
+                {t('home.hero.ctaExplore')}
               </Link>
             </div>
 
             <div className="mt-9 flex flex-wrap gap-x-7 gap-y-3 text-sm text-teal-800/60">
-              <div className="flex items-center gap-2">Browse before signing up</div>
-              <div className="flex items-center gap-2">Local artisans</div>
-              <div className="flex items-center gap-2">Service-first discovery</div>
+              <div className="flex items-center gap-2">{t('home.hero.perk1')}</div>
+              <div className="flex items-center gap-2">{t('home.hero.perk2')}</div>
+              <div className="flex items-center gap-2">{t('home.hero.perk3')}</div>
             </div>
           </div>
 
@@ -123,15 +133,15 @@ export default function Home() {
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src="https://images.unsplash.com/photo-1503387762-592deb58ef4e?auto=format&fit=crop&w=1000&q=85"
-                    alt="Skilled artisan working"
+                    alt={t('home.hero.imageAlt')}
                     className="h-full w-full object-cover"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-teal-950/90 via-teal-900/10 to-transparent" />
                   <div className="absolute bottom-0 left-0 right-0 p-8">
                     <p className="font-body text-sm font-semibold uppercase tracking-[0.18em] text-gold-400">AMANA</p>
-                    <h2 className="mt-2 font-display text-3xl text-white">Find the right person for the job.</h2>
+                    <h2 className="mt-2 font-display text-3xl text-white">{t('home.hero.cardTitle')}</h2>
                     <p className="mt-3 max-w-sm font-body text-sm leading-6 text-white/70">
-                      Discover skilled professionals around Kano and explore the work they can do.
+                      {t('home.hero.cardText')}
                     </p>
                   </div>
                 </div>
@@ -139,16 +149,16 @@ export default function Home() {
 
               <div className="absolute -left-12 bottom-14 hidden w-56 rounded-2xl border border-teal-900/5 bg-white p-5 shadow-2xl xl:block">
                 <div className="mb-3 flex items-center justify-between">
-                  <span className="font-body text-xs font-bold uppercase tracking-wider text-teal-800/50">Popular</span>
-                  <span className="rounded-full bg-gold-400/15 px-2 py-1 text-xs font-bold text-gold-500">Nearby</span>
+                  <span className="font-body text-xs font-bold uppercase tracking-wider text-teal-800/50">{t('home.hero.popular')}</span>
+                  <span className="rounded-full bg-gold-400/15 px-2 py-1 text-xs font-bold text-gold-500">{t('home.hero.nearby')}</span>
                 </div>
-                <p className="font-body font-bold text-teal-900">Plumbing</p>
-                <p className="font-body text-xs text-teal-800/50">Find local plumbers</p>
+                <p className="font-body font-bold text-teal-900">{t('catalog.plumber')}</p>
+                <p className="font-body text-xs text-teal-800/50">{t('home.hero.findPlumbers')}</p>
               </div>
 
               <div className="absolute -right-8 top-16 hidden rounded-2xl border border-teal-900/5 bg-white px-5 py-4 shadow-2xl xl:block">
-                <p className="font-body text-xs text-teal-800/50">Starting location</p>
-                <p className="font-body font-bold text-teal-900">Kano, Nigeria</p>
+                <p className="font-body text-xs text-teal-800/50">{t('home.hero.startingLocation')}</p>
+                <p className="font-body font-bold text-teal-900">{t('home.hero.kanoNigeria')}</p>
               </div>
             </div>
           </div>
@@ -159,13 +169,13 @@ export default function Home() {
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src="https://images.unsplash.com/photo-1503387762-592deb58ef4e?auto=format&fit=crop&w=900&q=80"
-                  alt="Skilled artisan working"
+                  alt={t('home.hero.imageAlt')}
                   className="h-full w-full object-cover"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-teal-950/90 via-transparent to-transparent" />
                 <div className="absolute bottom-0 p-6">
                   <p className="font-body text-xs font-bold uppercase tracking-widest text-gold-400">AMANA</p>
-                  <h2 className="mt-2 font-display text-2xl text-white">Skilled people. Real work.</h2>
+                  <h2 className="mt-2 font-display text-2xl text-white">{t('home.hero.mobileTitle')}</h2>
                 </div>
               </div>
             </div>
@@ -181,49 +191,55 @@ export default function Home() {
               <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-terracotta-600/20 bg-terracotta-50 px-4 py-2">
                 <span className="h-2 w-2 rounded-full bg-terracotta-600" />
                 <span className="font-body text-xs font-bold uppercase tracking-[0.18em] text-terracotta-600">
-                  Explore services
+                  {t('home.services.badge')}
                 </span>
               </div>
               <h2 className="font-display text-4xl leading-tight text-teal-900 sm:text-5xl">
-                What do you need help with?
+                {t('home.services.title')}
               </h2>
               <p className="mt-5 font-body text-lg leading-8 text-teal-800/65">
-                Start with the type of work you need. Amana helps you discover artisans who offer that service.
+                {t('home.services.subtitle')}
               </p>
             </div>
             <Link href="/search" className="group inline-flex items-center gap-2 font-body font-bold text-terracotta-600">
-              View all services
+              {t('home.services.viewAll')}
               <span className="transition-transform group-hover:translate-x-1">-&gt;</span>
             </Link>
           </div>
 
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {CATEGORIES.map((category, index) => (
-              <Link
-                key={category.value}
-                href={`/search?category=${encodeURIComponent(category.value)}`}
-                className="group relative overflow-hidden rounded-2xl border border-teal-900/8 bg-sand-50 p-6 shadow-sm transition-all duration-300 hover:-translate-y-1.5 hover:border-terracotta-600/30 hover:bg-white hover:shadow-xl"
-                style={{ animationDelay: `${index * 50}ms` }}
-              >
-                <div className="relative -mx-6 -mt-6 mb-5 h-36 overflow-hidden rounded-t-2xl">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={`https://picsum.photos/seed/amana-${category.image}/500/300`}
-                    alt=""
-                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-teal-900/40 to-transparent" />
-                </div>
+            {CATEGORIES.map((category, index) => {
+              const label = t(`catalog.${category.value}`);
 
-                <h3 className="font-display text-2xl text-teal-900">{category.label}</h3>
-                <p className="mt-2 font-body text-sm leading-6 text-teal-800/60">{category.description}</p>
-                <div className="mt-5 font-body text-sm font-bold text-terracotta-600">
-                  Find {category.label.toLowerCase()} artisans
-                </div>
+              return (
+                <Link
+                  key={category.value}
+                  href={`/search?category=${encodeURIComponent(category.value)}`}
+                  className="group relative overflow-hidden rounded-2xl border border-teal-900/8 bg-sand-50 p-6 shadow-sm transition-all duration-300 hover:-translate-y-1.5 hover:border-terracotta-600/30 hover:bg-white hover:shadow-xl"
+                  style={{ animationDelay: `${index * 50}ms` }}
+                >
+                  <div className="relative -mx-6 -mt-6 mb-5 h-36 overflow-hidden rounded-t-2xl">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={`https://picsum.photos/seed/amana-${category.image}/500/300`}
+                      alt=""
+                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-teal-900/40 to-transparent" />
+                  </div>
 
-                <div className="absolute bottom-0 left-0 h-1 w-0 bg-terracotta-600 transition-all duration-300 group-hover:w-full" />
-              </Link>
-            ))}
+                  <h3 className="font-display text-2xl text-teal-900">{label}</h3>
+                  <p className="mt-2 font-body text-sm leading-6 text-teal-800/60">
+                    {t(`home.catDesc.${category.value}`)}
+                  </p>
+                  <div className="mt-5 font-body text-sm font-bold text-terracotta-600">
+                    {t('home.services.findCategory', { name: label.toLowerCase() })}
+                  </div>
+
+                  <div className="absolute bottom-0 left-0 h-1 w-0 bg-terracotta-600 transition-all duration-300 group-hover:w-full" />
+                </Link>
+              );
+            })}
           </div>
         </div>
       </section>
@@ -236,16 +252,16 @@ export default function Home() {
               <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-teal-900/10 bg-white px-4 py-2">
                 <span className="h-2 w-2 rounded-full bg-teal-900" />
                 <span className="font-body text-xs font-bold uppercase tracking-[0.18em] text-teal-800">
-                  Local discovery
+                  {t('home.nearby.badge')}
                 </span>
               </div>
-              <h2 className="font-display text-4xl text-teal-900 sm:text-5xl">Artisans near Kano</h2>
+              <h2 className="font-display text-4xl text-teal-900 sm:text-5xl">{t('home.nearby.title')}</h2>
               <p className="mt-4 max-w-xl font-body text-lg leading-8 text-teal-800/65">
-                Explore artisans around Kano and choose someone whose skills match the work you need.
+                {t('home.nearby.subtitle')}
               </p>
             </div>
             <Link href="/search" className="group inline-flex items-center gap-2 font-body font-bold text-terracotta-600">
-              Browse all artisans
+              {t('home.nearby.browseAll')}
               <span className="transition-transform group-hover:translate-x-1">-&gt;</span>
             </Link>
           </div>
@@ -260,15 +276,15 @@ export default function Home() {
                 </div>
               ) : artisans.length === 0 ? (
                 <div className="rounded-2xl border border-teal-900/10 bg-white p-10 text-center shadow-sm">
-                  <h3 className="mt-5 font-display text-2xl text-teal-900">More artisans are coming</h3>
+                  <h3 className="mt-5 font-display text-2xl text-teal-900">{t('home.nearby.emptyTitle')}</h3>
                   <p className="mx-auto mt-3 max-w-md font-body leading-7 text-teal-800/60">
-                    We are growing the Amana artisan community. Check back soon or explore all available artisans.
+                    {t('home.nearby.emptyText')}
                   </p>
                   <Link
                     href="/search"
                     className="mt-6 inline-flex rounded-xl bg-teal-900 px-6 py-3 font-body font-bold text-white transition hover:bg-teal-800"
                   >
-                    Explore artisans
+                    {t('home.nearby.explore')}
                   </Link>
                 </div>
               ) : (
@@ -284,13 +300,13 @@ export default function Home() {
                           // eslint-disable-next-line @next/next/no-img-element
                           <img
                             src={artisan.portfolioPhotos[0]}
-                            alt={artisan.tradeCategory}
+                            alt={tradeLabel(artisan.tradeCategory)}
                             className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
                           />
                         ) : (
                           <div className="flex h-full items-center justify-center bg-gradient-to-br from-sand-100 via-white to-terracotta-50">
                             <span className="font-display text-3xl text-teal-900/30 capitalize">
-                              {artisan.tradeCategory}
+                              {tradeLabel(artisan.tradeCategory)}
                             </span>
                           </div>
                         )}
@@ -299,19 +315,21 @@ export default function Home() {
 
                         <div className="absolute bottom-4 left-4">
                           <span className="rounded-full bg-white/95 px-3 py-1.5 font-body text-xs font-bold capitalize text-teal-900 shadow-lg">
-                            {artisan.tradeCategory}
+                            {tradeLabel(artisan.tradeCategory)}
                           </span>
                         </div>
 
                         {artisan.verificationStatus === 'verified' && (
                           <div className="absolute right-4 top-4 rounded-full bg-teal-900/95 px-3 py-1.5 font-body text-xs font-bold text-white">
-                            Verified
+                            {t('home.nearby.verified')}
                           </div>
                         )}
                       </div>
 
                       <div className="p-5">
-                        <h3 className="font-display text-xl capitalize text-teal-900">{artisan.tradeCategory}</h3>
+                        <h3 className="font-display text-xl capitalize text-teal-900">
+                          {tradeLabel(artisan.tradeCategory)}
+                        </h3>
 
                         <div className="mt-3 flex flex-wrap items-center gap-2">
                           {artisan.ratingAvg ? (
@@ -320,15 +338,19 @@ export default function Home() {
                               <span className="font-normal text-teal-800/50">({artisan.ratingCount})</span>
                             </span>
                           ) : (
-                            <span className="font-body text-xs italic text-teal-800/45">No reviews yet</span>
+                            <span className="font-body text-xs italic text-teal-800/45">
+                              {t('home.nearby.noReviews')}
+                            </span>
                           )}
                           <span className="font-body text-xs text-teal-800/45">
-                            {(artisan.distanceMeters / 1000).toFixed(1)} km away
+                            {t('home.nearby.kmAway', {
+                              km: (artisan.distanceMeters / 1000).toFixed(1),
+                            })}
                           </span>
                         </div>
 
                         <div className="mt-5 border-t border-teal-900/8 pt-4 font-body text-sm font-bold text-terracotta-600">
-                          View artisan profile
+                          {t('home.nearby.viewProfile')}
                         </div>
                       </div>
                     </Link>
@@ -339,8 +361,8 @@ export default function Home() {
 
             <div className="relative min-h-[520px] overflow-hidden rounded-3xl bg-teal-900 shadow-xl flex items-center justify-center">
               <div className="relative text-center px-6">
-                <p className="font-display text-2xl text-white mb-2">Map view</p>
-                <p className="font-body text-sm text-white/60">Coming soon</p>
+                <p className="font-display text-2xl text-white mb-2">{t('home.nearby.mapTitle')}</p>
+                <p className="font-body text-sm text-white/60">{t('home.nearby.mapSoon')}</p>
               </div>
             </div>
           </div>
@@ -356,12 +378,12 @@ export default function Home() {
             <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2">
               <span className="h-2 w-2 rounded-full bg-gold-400" />
               <span className="font-body text-xs font-bold uppercase tracking-[0.18em] text-gold-400">
-                Simple by design
+                {t('home.how.badge')}
               </span>
             </div>
-            <h2 className="font-display text-4xl text-white sm:text-5xl">How Amana works</h2>
+            <h2 className="font-display text-4xl text-white sm:text-5xl">{t('home.how.title')}</h2>
             <p className="mt-5 font-body text-lg leading-8 text-white/60">
-              Finding the right person for your job should feel simple.
+              {t('home.how.subtitle')}
             </p>
           </div>
 
@@ -373,8 +395,8 @@ export default function Home() {
                   {step.number}
                 </div>
                 <div className="mt-7">
-                  <h3 className="font-display text-2xl text-white">{step.title}</h3>
-                  <p className="mt-3 font-body leading-7 text-white/60">{step.description}</p>
+                  <h3 className="font-display text-2xl text-white">{t(`home.how.${step.key}Title`)}</h3>
+                  <p className="mt-3 font-body leading-7 text-white/60">{t(`home.how.${step.key}Text`)}</p>
                 </div>
               </div>
             ))}
@@ -391,16 +413,16 @@ export default function Home() {
                 <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-teal-900/10 bg-sand-50 px-4 py-2">
                   <span className="h-2 w-2 rounded-full bg-teal-900" />
                   <span className="font-body text-xs font-bold uppercase tracking-[0.18em] text-teal-800">
-                    Artisan portfolio
+                    {t('home.gallery.badge')}
                   </span>
                 </div>
-                <h2 className="font-display text-4xl text-teal-900 sm:text-5xl">See the work.</h2>
+                <h2 className="font-display text-4xl text-teal-900 sm:text-5xl">{t('home.gallery.title')}</h2>
                 <p className="mt-5 font-body text-lg leading-8 text-teal-800/65">
-                  Explore work shared by artisans on Amana before you decide who to contact.
+                  {t('home.gallery.subtitle')}
                 </p>
               </div>
               <Link href="/search" className="group inline-flex items-center gap-2 font-body font-bold text-terracotta-600">
-                Explore more
+                {t('home.gallery.explore')}
                 <span className="transition-transform group-hover:translate-x-1">-&gt;</span>
               </Link>
             </div>
@@ -417,13 +439,13 @@ export default function Home() {
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={photo.url}
-                    alt={photo.trade}
+                    alt={tradeLabel(photo.trade)}
                     className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-teal-950/80 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
                   <div className="absolute bottom-4 left-4 translate-y-2 opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
                     <span className="rounded-full bg-white/95 px-3 py-1.5 font-body text-xs font-bold capitalize text-teal-900">
-                      {photo.trade}
+                      {tradeLabel(photo.trade)}
                     </span>
                   </div>
                 </Link>
@@ -440,33 +462,33 @@ export default function Home() {
             <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-teal-900/10 bg-white px-4 py-2">
               <span className="h-2 w-2 rounded-full bg-terracotta-600" />
               <span className="font-body text-xs font-bold uppercase tracking-[0.18em] text-teal-800">
-                Trust matters
+                {t('home.trust.badge')}
               </span>
             </div>
-            <h2 className="font-display text-4xl text-teal-900 sm:text-5xl">Built around confidence.</h2>
+            <h2 className="font-display text-4xl text-teal-900 sm:text-5xl">{t('home.trust.title')}</h2>
             <p className="mt-5 font-body text-lg leading-8 text-teal-800/65">
-              The goal is simple: make it easier to discover local skills and make better hiring decisions.
+              {t('home.trust.subtitle')}
             </p>
           </div>
 
           <div className="grid gap-5 md:grid-cols-2">
-            {TRUST_POINTS.map((point, i) => (
+            {TRUST_POINTS.map((key, i) => (
               <div
-                key={point.title}
+                key={key}
                 className="group rounded-2xl border border-teal-900/8 bg-white p-7 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
               >
                 <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-teal-900 font-display text-lg text-white group-hover:bg-terracotta-600 transition-colors mb-5">
                   {i + 1}
                 </div>
-                <h3 className="font-display text-2xl text-teal-900">{point.title}</h3>
-                <p className="mt-3 font-body leading-7 text-teal-800/60">{point.description}</p>
+                <h3 className="font-display text-2xl text-teal-900">{t(`home.trust.${key}Title`)}</h3>
+                <p className="mt-3 font-body leading-7 text-teal-800/60">{t(`home.trust.${key}Text`)}</p>
               </div>
             ))}
           </div>
 
           <div className="mt-8 text-center">
             <Link href="/safety" className="font-body text-sm font-bold text-terracotta-600">
-              Learn more about safety and trust
+              {t('home.trust.learnMore')}
             </Link>
           </div>
         </div>
@@ -483,17 +505,16 @@ export default function Home() {
               <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2">
                 <span className="h-2 w-2 rounded-full bg-gold-400" />
                 <span className="font-body text-xs font-bold uppercase tracking-[0.18em] text-gold-400">
-                  For artisans
+                  {t('home.forArtisans.badge')}
                 </span>
               </div>
 
               <h2 className="font-display text-4xl leading-tight text-white sm:text-5xl">
-                Your skills deserve to be discovered.
+                {t('home.forArtisans.title')}
               </h2>
 
               <p className="mt-6 max-w-2xl font-body text-lg leading-8 text-white/65">
-                Create your Amana profile, showcase the work you are proud of and make it
-                easier for customers looking for your skills to find you.
+                {t('home.forArtisans.text')}
               </p>
 
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
@@ -501,21 +522,21 @@ export default function Home() {
                   href="/register"
                   className="inline-flex items-center justify-center rounded-xl bg-terracotta-600 px-7 py-4 font-body font-bold text-white shadow-lg transition-all hover:-translate-y-1 hover:bg-terracotta-700"
                 >
-                  Join Amana
+                  {t('home.forArtisans.join')}
                 </Link>
                 <Link
                   href="/help"
                   className="inline-flex items-center justify-center rounded-xl border border-white/15 bg-white/5 px-7 py-4 font-body font-bold text-white transition-all hover:bg-white/10"
                 >
-                  Learn how it works
+                  {t('home.forArtisans.learn')}
                 </Link>
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              {['Show your work', 'Be discovered locally', 'Connect with customers', 'Grow with Amana'].map((text) => (
-                <div key={text} className="rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur-sm">
-                  <p className="font-body text-sm font-bold text-white">{text}</p>
+              {ARTISAN_BENEFITS.map((key) => (
+                <div key={key} className="rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur-sm">
+                  <p className="font-body text-sm font-bold text-white">{t(`home.forArtisans.${key}`)}</p>
                 </div>
               ))}
             </div>
@@ -530,13 +551,12 @@ export default function Home() {
             <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-terracotta-600/20 bg-terracotta-50 px-4 py-2">
               <span className="h-2 w-2 rounded-full bg-terracotta-600" />
               <span className="font-body text-xs font-bold uppercase tracking-[0.18em] text-terracotta-600">
-                Where we serve
+                {t('home.where.badge')}
               </span>
             </div>
-            <h2 className="font-display text-4xl text-teal-900">Starting in Kano.</h2>
+            <h2 className="font-display text-4xl text-teal-900">{t('home.where.title')}</h2>
             <p className="mt-4 max-w-2xl font-body text-lg leading-8 text-teal-800/60">
-              Amana is starting in Kano and is being built with a bigger vision: make trusted
-              local skills easier to discover across Nigeria.
+              {t('home.where.text')}
             </p>
           </div>
         </div>
@@ -549,19 +569,19 @@ export default function Home() {
 
         <div className="relative mx-auto max-w-3xl px-6 text-center">
           <p className="font-body text-xs font-bold uppercase tracking-[0.2em] text-white/60">
-            Your next job starts here
+            {t('home.cta.eyebrow')}
           </p>
           <h2 className="mt-4 font-display text-4xl leading-tight text-white sm:text-5xl md:text-6xl">
-            Need a skilled person for the job?
+            {t('home.cta.title')}
           </h2>
           <p className="mx-auto mt-6 max-w-xl font-body text-lg leading-8 text-white/75">
-            Choose a service, explore artisans near you and find someone who fits the work you need.
+            {t('home.cta.text')}
           </p>
           <Link
             href="/search"
             className="group mt-9 inline-flex items-center gap-3 rounded-xl bg-teal-900 px-8 py-4 font-body text-lg font-bold text-white shadow-2xl transition-all duration-300 hover:-translate-y-1 hover:bg-teal-800"
           >
-            Find an Artisan
+            {t('home.cta.button')}
             <span className="transition-transform duration-300 group-hover:translate-x-1">-&gt;</span>
           </Link>
         </div>
@@ -582,51 +602,51 @@ export default function Home() {
               </Link>
 
               <p className="mt-5 max-w-sm font-body leading-7 text-white/50">
-                A local marketplace connecting customers with skilled artisans and helping
-                great work get discovered.
+                {t('home.footer.tagline')}
               </p>
 
               <div className="mt-6 inline-flex rounded-full border border-white/10 bg-white/5 px-4 py-2 font-body text-xs text-white/50">
-                Starting in Kano, expanding across Nigeria.
+                {t('home.footer.region')}
               </div>
             </div>
 
             <div>
-              <h3 className="font-body text-xs font-bold uppercase tracking-[0.18em] text-terracotta-400">Customers</h3>
+              <h3 className="font-body text-xs font-bold uppercase tracking-[0.18em] text-terracotta-400">{t('home.footer.customers')}</h3>
               <div className="mt-5 flex flex-col gap-3">
-                <Link href="/search" className="font-body text-sm text-white/55 transition hover:translate-x-1 hover:text-white">Find Artisans</Link>
-                <Link href="/#how-it-works" className="font-body text-sm text-white/55 transition hover:translate-x-1 hover:text-white">How It Works</Link>
-                <Link href="/help" className="font-body text-sm text-white/55 transition hover:translate-x-1 hover:text-white">FAQs</Link>
+                <Link href="/search" className="font-body text-sm text-white/55 transition hover:translate-x-1 hover:text-white">{t('home.footer.findArtisans')}</Link>
+                <Link href="/#how-it-works" className="font-body text-sm text-white/55 transition hover:translate-x-1 hover:text-white">{t('home.footer.howItWorks')}</Link>
+                <Link href="/help" className="font-body text-sm text-white/55 transition hover:translate-x-1 hover:text-white">{t('home.footer.faqs')}</Link>
               </div>
             </div>
 
             <div>
-              <h3 className="font-body text-xs font-bold uppercase tracking-[0.18em] text-gold-400">Artisans</h3>
+              <h3 className="font-body text-xs font-bold uppercase tracking-[0.18em] text-gold-400">{t('home.footer.artisans')}</h3>
               <div className="mt-5 flex flex-col gap-3">
-                <Link href="/register" className="font-body text-sm text-white/55 transition hover:translate-x-1 hover:text-white">Become an Artisan</Link>
-                <Link href="/edit-profile" className="font-body text-sm text-white/55 transition hover:translate-x-1 hover:text-white">Build Your Profile</Link>
-                <Link href="/help" className="font-body text-sm text-white/55 transition hover:translate-x-1 hover:text-white">Artisan FAQs</Link>
+                <Link href="/register" className="font-body text-sm text-white/55 transition hover:translate-x-1 hover:text-white">{t('home.footer.becomeArtisan')}</Link>
+                {/* /edit-profile does not exist; the profile editor lives in the dashboard. */}
+                <Link href="/dashboard" className="font-body text-sm text-white/55 transition hover:translate-x-1 hover:text-white">{t('home.footer.buildProfile')}</Link>
+                <Link href="/help" className="font-body text-sm text-white/55 transition hover:translate-x-1 hover:text-white">{t('home.footer.artisanFaqs')}</Link>
               </div>
             </div>
 
             <div>
-              <h3 className="font-body text-xs font-bold uppercase tracking-[0.18em] text-white/70">Support</h3>
+              <h3 className="font-body text-xs font-bold uppercase tracking-[0.18em] text-white/70">{t('home.footer.support')}</h3>
               <div className="mt-5 flex flex-col gap-3">
-                <Link href="/help" className="font-body text-sm text-white/55 transition hover:translate-x-1 hover:text-white">Help Center</Link>
-                <Link href="/safety" className="font-body text-sm text-white/55 transition hover:translate-x-1 hover:text-white">Safety and Trust</Link>
-                <Link href="/search" className="font-body text-sm text-white/55 transition hover:translate-x-1 hover:text-white">Browse Services</Link>
+                <Link href="/help" className="font-body text-sm text-white/55 transition hover:translate-x-1 hover:text-white">{t('home.footer.helpCenter')}</Link>
+                <Link href="/safety" className="font-body text-sm text-white/55 transition hover:translate-x-1 hover:text-white">{t('home.footer.safety')}</Link>
+                <Link href="/search" className="font-body text-sm text-white/55 transition hover:translate-x-1 hover:text-white">{t('home.footer.browse')}</Link>
               </div>
             </div>
           </div>
 
           <div className="mt-14 flex flex-col gap-5 border-t border-white/10 pt-8 sm:flex-row sm:items-center sm:justify-between">
-            <p className="font-body text-sm text-white/35">© 2026 Amana. All rights reserved.</p>
+            <p className="font-body text-sm text-white/35">{t('home.footer.rights')}</p>
 
             <div className="flex items-center gap-3">
               {['Instagram', 'Facebook', 'TikTok', 'LinkedIn'].map((platform) => (
                 <span
                   key={platform}
-                  title={`${platform} coming soon`}
+                  title={t('home.footer.soon', { platform })}
                   className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/5 font-body text-xs font-bold text-white/35"
                 >
                   {platform.charAt(0)}

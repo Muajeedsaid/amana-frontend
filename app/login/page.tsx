@@ -1,13 +1,16 @@
-
 'use client';
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { loginUser } from '@/lib/api/auth';
+import { useLanguage } from '@/lib/i18n/LanguageContext';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
 export default function LoginPage() {
   const router = useRouter();
+  const { t } = useLanguage();
 
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
@@ -29,21 +32,18 @@ export default function LoginPage() {
 
       if (pendingTrade && data.user.role === 'artisan') {
         try {
-          await fetch(
-            `${process.env.NEXT_PUBLIC_API_URL}/profiles/artisan`,
-            {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${data.accessToken}`,
-              },
-              body: JSON.stringify({
-                tradeCategory: pendingTrade,
-                longitude: 8.5167,
-                latitude: 12.0,
-              }),
-            }
-          );
+          await fetch(`${API_URL}/profiles/artisan`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${data.accessToken}`,
+            },
+            body: JSON.stringify({
+              tradeCategory: pendingTrade,
+              longitude: 8.5167,
+              latitude: 12.0,
+            }),
+          });
         } catch {
           // Don't block login if profile already exists.
         } finally {
@@ -59,9 +59,7 @@ export default function LoginPage() {
         router.push('/');
       }
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : 'Something went wrong'
-      );
+      setError(err instanceof Error ? err.message : t('common.error'));
     } finally {
       setLoading(false);
     }
@@ -69,54 +67,44 @@ export default function LoginPage() {
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-sand-50 flex items-center justify-center px-5 py-10">
-      {/* Decorative background */}
       <div className="absolute -top-40 -left-40 h-96 w-96 rounded-full bg-teal-900/10 blur-3xl" />
-
       <div className="absolute -bottom-40 -right-40 h-96 w-96 rounded-full bg-terracotta-500/10 blur-3xl" />
-
       <div className="absolute left-[8%] top-[18%] hidden select-none font-display text-[180px] font-bold leading-none text-teal-900/[0.025] lg:block">
         A
       </div>
 
       <div className="relative w-full max-w-md">
-        {/* Logo */}
         <div className="mb-8 text-center">
           <Link href="/" className="inline-flex items-center gap-3">
             <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-teal-900 text-xl font-bold text-sand-50 shadow-lg transition-transform duration-300 hover:-rotate-6">
               A
             </div>
-
             <span className="font-display text-3xl font-semibold text-teal-900">
               Amana
             </span>
           </Link>
-
           <p className="mt-3 text-sm text-teal-800/55">
             Welcome back to trusted connections.
           </p>
         </div>
 
-        {/* Card */}
         <div className="rounded-3xl border border-teal-900/10 bg-white/90 p-7 shadow-[0_25px_80px_rgba(10,60,60,0.12)] backdrop-blur-xl sm:p-10">
           <div className="mb-8">
             <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-terracotta-600">
-              Sign in
+              {t('login.eyebrow')}
             </p>
-
             <h1 className="font-display text-3xl text-teal-900 sm:text-4xl">
-              Welcome back
+              {t('login.title')}
             </h1>
-
             <p className="mt-2 text-sm text-teal-800/55">
-              Sign in to continue your Amana journey.
+              {t('login.subtitle')}
             </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Phone */}
             <div>
               <label className="mb-2 block text-sm font-medium text-teal-900">
-                Phone number
+                {t('login.phoneLabel')}
               </label>
 
               <div className="relative">
@@ -126,30 +114,28 @@ export default function LoginPage() {
 
                 <input
                   type="tel"
+                  inputMode="numeric"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   required
-                  placeholder="08012345678"
+                  placeholder={t('login.phonePlaceholder')}
                   className="w-full rounded-xl border border-teal-900/15 bg-sand-50/60 px-11 py-3.5 text-sm text-teal-900 outline-none transition-all duration-300 placeholder:text-teal-900/25 focus:border-terracotta-500 focus:bg-white focus:ring-4 focus:ring-terracotta-500/10"
                 />
               </div>
             </div>
 
-            {/* Password */}
             <div>
               <div className="mb-2 flex items-center justify-between">
                 <label className="text-sm font-medium text-teal-900">
-                  Password
+                  {t('login.passwordLabel')}
                 </label>
 
                 <button
                   type="button"
                   className="text-xs font-medium text-terracotta-600 transition hover:text-terracotta-700 hover:underline"
-                  onClick={() =>
-                    setError('Password reset will be available soon.')
-                  }
+                  onClick={() => setError(t('login.resetSoon'))}
                 >
-                  Forgot password?
+                  {t('login.forgotPassword')}
                 </button>
               </div>
 
@@ -173,7 +159,6 @@ export default function LoginPage() {
               </div>
             </div>
 
-            {/* Error */}
             {error && (
               <div className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 animate-[fadeIn_0.25s_ease-out]">
                 <span className="mt-0.5">!</span>
@@ -181,7 +166,6 @@ export default function LoginPage() {
               </div>
             )}
 
-            {/* Login */}
             <button
               type="submit"
               disabled={loading}
@@ -191,14 +175,12 @@ export default function LoginPage() {
                 {loading ? (
                   <>
                     <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                    Signing in...
+                    {t('login.signingIn')}
                   </>
                 ) : (
                   <>
-                    Sign in
-                    <span className="transition-transform duration-300 group-hover:translate-x-1">
-                      →
-                    </span>
+                    {t('login.signIn')}
+                    <span className="transition-transform duration-300 group-hover:translate-x-1">→</span>
                   </>
                 )}
               </span>
@@ -208,22 +190,18 @@ export default function LoginPage() {
           <div className="my-7 h-px bg-teal-900/10" />
 
           <p className="text-center text-sm text-teal-800/55">
-            Don&apos;t have an account?{' '}
-            <Link
-              href="/register"
-              className="font-semibold text-terracotta-600 transition hover:text-terracotta-700 hover:underline"
-            >
-              Create account
+            {t('login.noAccount')}{' '}
+            <Link href="/register" className="font-semibold text-terracotta-600 transition hover:text-terracotta-700 hover:underline">
+              {t('login.createAccount')}
             </Link>
           </p>
         </div>
 
-        {/* Trust message */}
         <div className="mt-6 flex items-center justify-center gap-2 text-xs text-teal-900/40">
           <span className="flex h-5 w-5 items-center justify-center rounded-full bg-teal-900/5">
             ✓
           </span>
-          Your account information is protected.
+          {t('login.protectedNotice')}
         </div>
       </div>
     </main>

@@ -1,19 +1,22 @@
-
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { registerUser } from '@/lib/api/auth';
+import { useLanguage } from '@/lib/i18n/LanguageContext';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
 export default function RegisterPage() {
+  const router = useRouter();
+  const { t } = useLanguage();
   const [role, setRole] = useState<'customer' | 'artisan'>('customer');
   const [phone, setPhone] = useState('');
-  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [tradeCategory, setTradeCategory] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [registered, setRegistered] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -22,95 +25,34 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
-      await registerUser(phone, email, password, role);
+      const data = await registerUser(phone, password, role);
+      localStorage.setItem('amana_token', data.accessToken);
 
       if (role === 'artisan') {
-        localStorage.setItem(
-          'amana_pending_trade',
-          tradeCategory || 'general'
-        );
+        await fetch(`${API_URL}/profiles/artisan`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${data.accessToken}`,
+          },
+          body: JSON.stringify({
+            tradeCategory: tradeCategory || 'general',
+            longitude: 8.5167,
+            latitude: 12.0,
+          }),
+        });
       }
 
-      setRegistered(true);
+      router.push('/dashboard');
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : 'Something went wrong'
-      );
+      setError(err instanceof Error ? err.message : t('common.error'));
     } finally {
       setLoading(false);
     }
   }
 
-  if (registered) {
-    return (
-      <main className="relative min-h-screen overflow-hidden bg-sand-50 flex items-center justify-center px-5 py-10">
-        {/* Decorative background */}
-        <div className="absolute -top-32 -right-32 h-80 w-80 rounded-full bg-terracotta-500/10 blur-3xl animate-pulse" />
-        <div className="absolute -bottom-32 -left-32 h-80 w-80 rounded-full bg-teal-900/10 blur-3xl animate-pulse" />
-
-        <div className="relative w-full max-w-md">
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center gap-2">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-teal-900 text-sand-50 font-display text-xl shadow-lg">
-                A
-              </div>
-
-              <span className="font-display text-2xl font-semibold text-teal-900">
-                Amana
-              </span>
-            </div>
-          </div>
-
-          <div className="rounded-3xl border border-teal-900/10 bg-white/90 backdrop-blur-xl p-8 sm:p-10 shadow-[0_25px_80px_rgba(10,60,60,0.12)] text-center">
-            <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-teal-900/5">
-              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-teal-900 text-2xl text-white shadow-lg animate-[bounce_2s_ease-in-out_infinite]">
-                ✓
-              </div>
-            </div>
-
-            <p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-terracotta-600">
-              Almost there
-            </p>
-
-            <h1 className="font-display text-3xl sm:text-4xl text-teal-900">
-              Check your email
-            </h1>
-
-            <p className="mt-4 text-sm leading-7 text-teal-800/65">
-              We sent a verification link to
-            </p>
-
-            <p className="mt-1 break-all font-medium text-teal-900">
-              {email}
-            </p>
-
-            <p className="mt-4 text-sm leading-6 text-teal-800/60">
-              Click the link in your email to activate your Amana account.
-              After verification, you can come back and log in.
-            </p>
-
-            <Link
-              href="/login"
-              className="group mt-8 flex w-full items-center justify-center gap-2 rounded-xl bg-terracotta-600 px-6 py-3.5 text-sm font-semibold text-white shadow-lg shadow-terracotta-600/20 transition-all duration-300 hover:-translate-y-0.5 hover:bg-terracotta-700 hover:shadow-xl"
-            >
-              Go to login
-              <span className="transition-transform duration-300 group-hover:translate-x-1">
-                →
-              </span>
-            </Link>
-
-            <p className="mt-6 text-xs leading-5 text-teal-800/45">
-              Didn&apos;t receive the email? Check your spam or junk folder.
-            </p>
-          </div>
-        </div>
-      </main>
-    );
-  }
-
   return (
     <main className="relative min-h-screen overflow-hidden bg-sand-50 px-5 py-8 sm:px-6">
-      {/* Background decorations */}
       <div className="absolute -top-40 -right-40 h-96 w-96 rounded-full bg-terracotta-500/10 blur-3xl" />
       <div className="absolute top-1/3 -left-40 h-96 w-96 rounded-full bg-teal-900/10 blur-3xl" />
 
@@ -119,45 +61,37 @@ export default function RegisterPage() {
       </div>
 
       <div className="relative mx-auto w-full max-w-lg">
-        {/* Logo */}
         <div className="mb-8 text-center">
           <Link href="/" className="inline-flex items-center gap-3">
             <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-teal-900 text-xl font-bold text-sand-50 shadow-lg transition-transform duration-300 hover:rotate-6">
               A
             </div>
-
             <span className="font-display text-3xl font-semibold text-teal-900">
               Amana
             </span>
           </Link>
-
           <p className="mt-3 text-sm text-teal-800/55">
             Trusted connections. Skilled hands.
           </p>
         </div>
 
-        {/* Card */}
         <div className="rounded-3xl border border-teal-900/10 bg-white/90 p-6 shadow-[0_25px_80px_rgba(10,60,60,0.12)] backdrop-blur-xl sm:p-9">
           <div className="mb-7">
             <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-terracotta-600">
-              Get started
+              {t('register.eyebrow')}
             </p>
-
             <h1 className="font-display text-3xl text-teal-900 sm:text-4xl">
-              Create your account
+              {t('register.title')}
             </h1>
-
             <p className="mt-2 text-sm text-teal-800/55">
-              Join Amana and connect with trusted people around you.
+              {t('register.subtitle')}
             </p>
           </div>
 
-          {/* Role selection */}
           <div className="mb-7">
             <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-teal-800/60">
-              I want to
+              {t('register.iWantTo')}
             </p>
-
             <div className="grid grid-cols-2 gap-3">
               <button
                 type="button"
@@ -170,20 +104,14 @@ export default function RegisterPage() {
               >
                 <div
                   className={`mb-3 flex h-10 w-10 items-center justify-center rounded-xl text-lg transition-all ${
-                    role === 'customer'
-                      ? 'bg-terracotta-600 text-white'
-                      : 'bg-teal-900/5 text-teal-900'
+                    role === 'customer' ? 'bg-terracotta-600 text-white' : 'bg-teal-900/5 text-teal-900'
                   }`}
                 >
                   ◎
                 </div>
-
-                <p className="text-sm font-semibold text-teal-900">
-                  Find a service
-                </p>
-
+                <p className="text-sm font-semibold text-teal-900">{t('register.findService')}</p>
                 <p className="mt-1 text-xs leading-5 text-teal-800/50">
-                  I need a skilled professional
+                  {t('register.findServiceDesc')}
                 </p>
               </button>
 
@@ -198,76 +126,44 @@ export default function RegisterPage() {
               >
                 <div
                   className={`mb-3 flex h-10 w-10 items-center justify-center rounded-xl text-lg transition-all ${
-                    role === 'artisan'
-                      ? 'bg-terracotta-600 text-white'
-                      : 'bg-teal-900/5 text-teal-900'
+                    role === 'artisan' ? 'bg-terracotta-600 text-white' : 'bg-teal-900/5 text-teal-900'
                   }`}
                 >
                   ✦
                 </div>
-
-                <p className="text-sm font-semibold text-teal-900">
-                  Offer my skills
-                </p>
-
+                <p className="text-sm font-semibold text-teal-900">{t('register.offerSkills')}</p>
                 <p className="mt-1 text-xs leading-5 text-teal-800/50">
-                  I&apos;m an artisan
+                  {t('register.offerSkillsDesc')}
                 </p>
               </button>
             </div>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Phone */}
             <div>
               <label className="mb-2 block text-sm font-medium text-teal-900">
-                Phone number
+                {t('register.phoneLabel')}
               </label>
-
               <div className="group relative">
                 <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-teal-800/35">
                   ☎
                 </span>
-
                 <input
                   type="tel"
+                  inputMode="numeric"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   required
-                  placeholder="08012345678"
+                  placeholder={t('register.phonePlaceholder')}
                   className="w-full rounded-xl border border-teal-900/15 bg-sand-50/60 px-11 py-3.5 text-sm text-teal-900 outline-none transition-all duration-300 placeholder:text-teal-900/25 focus:border-terracotta-500 focus:bg-white focus:ring-4 focus:ring-terracotta-500/10"
                 />
               </div>
             </div>
 
-            {/* Email */}
             <div>
               <label className="mb-2 block text-sm font-medium text-teal-900">
-                Email address
+                {t('register.passwordLabel')}
               </label>
-
-              <div className="relative">
-                <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-teal-800/35">
-                  @
-                </span>
-
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  placeholder="you@example.com"
-                  className="w-full rounded-xl border border-teal-900/15 bg-sand-50/60 px-11 py-3.5 text-sm text-teal-900 outline-none transition-all duration-300 placeholder:text-teal-900/25 focus:border-terracotta-500 focus:bg-white focus:ring-4 focus:ring-terracotta-500/10"
-                />
-              </div>
-            </div>
-
-            {/* Password */}
-            <div>
-              <label className="mb-2 block text-sm font-medium text-teal-900">
-                Password
-              </label>
-
               <div className="relative">
                 <input
                   type={showPassword ? 'text' : 'password'}
@@ -275,10 +171,9 @@ export default function RegisterPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   minLength={6}
-                  placeholder="At least 6 characters"
+                  placeholder={t('register.passwordPlaceholder')}
                   className="w-full rounded-xl border border-teal-900/15 bg-sand-50/60 px-4 py-3.5 pr-12 text-sm text-teal-900 outline-none transition-all duration-300 placeholder:text-teal-900/25 focus:border-terracotta-500 focus:bg-white focus:ring-4 focus:ring-terracotta-500/10"
                 />
-
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
@@ -289,29 +184,25 @@ export default function RegisterPage() {
               </div>
             </div>
 
-            {/* Artisan trade */}
             {role === 'artisan' && (
               <div className="animate-[fadeIn_0.3s_ease-out]">
                 <label className="mb-2 block text-sm font-medium text-teal-900">
-                  Your trade
+                  {t('register.tradeLabel')}
                 </label>
-
                 <input
                   type="text"
                   value={tradeCategory}
                   onChange={(e) => setTradeCategory(e.target.value)}
                   required
-                  placeholder="e.g. electrician, tailor, plumber"
+                  placeholder={t('register.tradePlaceholder')}
                   className="w-full rounded-xl border border-teal-900/15 bg-sand-50/60 px-4 py-3.5 text-sm text-teal-900 outline-none transition-all duration-300 placeholder:text-teal-900/25 focus:border-terracotta-500 focus:bg-white focus:ring-4 focus:ring-terracotta-500/10"
                 />
-
                 <p className="mt-2 text-xs text-teal-800/45">
-                  You can complete your professional profile after verification.
+                  {t('register.tradeHint')}
                 </p>
               </div>
             )}
 
-            {/* Error */}
             {error && (
               <div className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 animate-[fadeIn_0.25s_ease-out]">
                 <span className="mt-0.5">!</span>
@@ -319,7 +210,6 @@ export default function RegisterPage() {
               </div>
             )}
 
-            {/* Submit */}
             <button
               type="submit"
               disabled={loading}
@@ -329,14 +219,12 @@ export default function RegisterPage() {
                 {loading ? (
                   <>
                     <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                    Creating account...
+                    {t('register.creatingAccount')}
                   </>
                 ) : (
                   <>
-                    Create account
-                    <span className="transition-transform duration-300 group-hover:translate-x-1">
-                      →
-                    </span>
+                    {t('register.createAccount')}
+                    <span className="transition-transform duration-300 group-hover:translate-x-1">→</span>
                   </>
                 )}
               </span>
@@ -346,22 +234,17 @@ export default function RegisterPage() {
           <div className="my-7 h-px bg-teal-900/10" />
 
           <p className="text-center text-sm text-teal-800/55">
-            Already have an account?{' '}
-            <Link
-              href="/login"
-              className="font-semibold text-terracotta-600 transition hover:text-terracotta-700 hover:underline"
-            >
-              Log in
+            {t('register.alreadyHaveAccount')}{' '}
+            <Link href="/login" className="font-semibold text-terracotta-600 transition hover:text-terracotta-700 hover:underline">
+              {t('register.logIn')}
             </Link>
           </p>
         </div>
 
         <p className="mt-6 text-center text-xs text-teal-900/35">
-          By creating an account, you agree to use Amana responsibly and
-          respectfully.
+          {t('register.terms')}
         </p>
       </div>
     </main>
   );
 }
-

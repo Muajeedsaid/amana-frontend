@@ -3,6 +3,8 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
+import { useLanguage } from '@/lib/i18n/LanguageContext';
+import LanguageToggle from './LanguageToggle';
 
 export default function NavHeader() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -14,6 +16,7 @@ export default function NavHeader() {
   const [helpOpen, setHelpOpen] = useState(false);
 
   const pathname = usePathname();
+  const { t } = useLanguage();
 
   useEffect(() => {
     const token = localStorage.getItem('amana_token');
@@ -110,7 +113,7 @@ export default function NavHeader() {
         <nav className="hidden items-center gap-7 lg:flex">
           {!isArtisan && (
             <Link href="/search" className={navLink}>
-              Find Artisans
+              {t('nav.findArtisans')}
             </Link>
           )}
 
@@ -125,7 +128,7 @@ export default function NavHeader() {
               }}
               className={`${navLink} flex items-center gap-1.5`}
             >
-              Services
+              {t('nav.services')}
               <span
                 className={`text-xs transition-transform ${
                   servicesOpen ? 'rotate-180' : ''
@@ -138,49 +141,49 @@ export default function NavHeader() {
             {servicesOpen && (
               <div className="absolute left-1/2 top-full mt-4 w-64 -translate-x-1/2 rounded-2xl border border-teal-900/10 bg-white p-3 shadow-2xl">
                 <p className="px-4 pb-2 pt-1 text-xs font-semibold uppercase tracking-wider text-terracotta-600">
-                  Popular Services
+                  {t('nav.servicesPopular')}
                 </p>
 
                 <Link
                   href="/search?category=plumber"
                   className={dropdownItem}
                 >
-                  🔧 Plumbing
+                  🔧 {t('nav.plumbing')}
                 </Link>
 
                 <Link
                   href="/search?category=electrician"
                   className={dropdownItem}
                 >
-                  ⚡ Electrical
+                  ⚡ {t('nav.electrical')}
                 </Link>
 
                 <Link
                   href="/search?category=solar%20technician"
                   className={dropdownItem}
                 >
-                  ☀️ Solar
+                  ☀️ {t('nav.solar')}
                 </Link>
 
                 <Link
                   href="/search?category=carpenter"
                   className={dropdownItem}
                 >
-                  🪚 Carpentry
+                  🪚 {t('nav.carpentry')}
                 </Link>
 
                 <Link
                   href="/search?category=tailor"
                   className={dropdownItem}
                 >
-                  🧵 Tailoring
+                  🧵 {t('nav.tailoring')}
                 </Link>
 
                 <Link
                   href="/search?category=mechanic"
                   className={dropdownItem}
                 >
-                  🚗 Auto Repair
+                  🚗 {t('nav.autoRepair')}
                 </Link>
 
                 <div className="my-2 border-t border-teal-900/10" />
@@ -189,7 +192,7 @@ export default function NavHeader() {
                   href="/search"
                   className="block rounded-lg px-4 py-2.5 text-sm font-semibold text-terracotta-600 transition-colors hover:bg-sand-100"
                 >
-                  View all services →
+                  {t('nav.viewAllServices')}
                 </Link>
               </div>
             )}
@@ -197,7 +200,7 @@ export default function NavHeader() {
 
           {/* HOW IT WORKS */}
           <Link href="/#how-it-works" className={navLink}>
-            How It Works
+            {t('nav.howItWorks')}
           </Link>
 
           {/* FOR ARTISANS */}
@@ -212,7 +215,7 @@ export default function NavHeader() {
                 }}
                 className={`${navLink} flex items-center gap-1.5`}
               >
-                For Artisans
+                {t('nav.forArtisans')}
                 <span
                   className={`text-xs transition-transform ${
                     artisanOpen ? 'rotate-180' : ''
@@ -225,42 +228,42 @@ export default function NavHeader() {
               {artisanOpen && (
                 <div className="absolute left-1/2 top-full mt-4 w-64 -translate-x-1/2 rounded-2xl border border-teal-900/10 bg-white p-3 shadow-2xl">
                   <p className="px-4 pb-2 pt-1 text-xs font-semibold uppercase tracking-wider text-terracotta-600">
-                    Grow with Amana
+                    {t('nav.forArtisansGrow')}
                   </p>
 
                   <Link
                     href="/register"
                     className={dropdownItem}
                   >
-                    Become an Artisan
+                    {t('nav.becomeArtisan')}
                   </Link>
 
                   <Link
                     href="/edit-profile"
                     className={dropdownItem}
                   >
-                    Create Your Profile
+                    {t('nav.createProfile')}
                   </Link>
 
                   <Link
                     href="/edit-profile"
                     className={dropdownItem}
                   >
-                    Showcase Your Work
+                    {t('nav.showcaseWork')}
                   </Link>
 
                   <Link
                     href="/help"
                     className={dropdownItem}
                   >
-                    Artisan Guide
+                    {t('nav.artisanGuide')}
                   </Link>
 
                   <Link
                     href="/help"
                     className={dropdownItem}
                   >
-                    Artisan FAQs
+                    {t('nav.artisanFaqs')}
                   </Link>
                 </div>
               )}
@@ -270,14 +273,14 @@ export default function NavHeader() {
           {/* ARTISAN LINKS */}
           {isArtisan && (
             <Link href="/edit-profile" className={navLink}>
-              Edit Profile
+              {t('nav.editProfile')}
             </Link>
           )}
 
           {/* ADMIN */}
           {isAdmin && (
             <Link href="/admin" className={navLink}>
-              Admin
+              {t('nav.admin')}
             </Link>
           )}
 
@@ -292,7 +295,7 @@ export default function NavHeader() {
               }}
               className={`${navLink} flex items-center gap-1.5`}
             >
-              Help
+              {t('nav.help')}
               <span
                 className={`text-xs transition-transform ${
                   helpOpen ? 'rotate-180' : ''
@@ -305,54 +308,57 @@ export default function NavHeader() {
             {helpOpen && (
               <div className="absolute right-0 top-full mt-4 w-64 rounded-2xl border border-teal-900/10 bg-white p-3 shadow-2xl">
                 <p className="px-4 pb-2 pt-1 text-xs font-semibold uppercase tracking-wider text-terracotta-600">
-                  How can we help?
+                  {t('nav.helpHeading')}
                 </p>
 
                 <Link
                   href="/help"
                   className={dropdownItem}
                 >
-                  Customer Guide
+                  {t('nav.customerGuide')}
                 </Link>
 
                 <Link
                   href="/help"
                   className={dropdownItem}
                 >
-                  Finding an Artisan
+                  {t('nav.findingArtisan')}
                 </Link>
 
                 <Link
                   href="/help"
                   className={dropdownItem}
                 >
-                  Hiring an Artisan
+                  {t('nav.hiringArtisan')}
                 </Link>
 
                 <Link
                   href="/help"
                   className={dropdownItem}
                 >
-                  Artisan Guide
+                  {t('nav.artisanGuide')}
                 </Link>
 
                 <Link
                   href="/safety"
                   className={dropdownItem}
                 >
-                  Safety & Trust
+                  {t('nav.safetyTrust')}
                 </Link>
 
                 <Link
                   href="/help"
                   className={dropdownItem}
                 >
-                  Contact Support
+                  {t('nav.contactSupport')}
                 </Link>
               </div>
             )}
           </div>
         </nav>
+
+        {/* LANGUAGE TOGGLE — always visible, at every screen width */}
+        <LanguageToggle />
 
         {/* RIGHT SIDE */}
         <div className="hidden items-center gap-4 md:flex">
@@ -363,7 +369,7 @@ export default function NavHeader() {
     href={isAdmin ? '/admin' : '/dashboard'}
     className={navLink}
   >
-    Dashboard
+    {t('nav.dashboard')}
   </Link>
 )}
 
@@ -371,7 +377,7 @@ export default function NavHeader() {
                 onClick={handleLogout}
                 className="rounded-xl border border-terracotta-600 px-4 py-2 text-sm font-semibold text-terracotta-600 transition-all duration-200 hover:bg-terracotta-600 hover:text-white hover:shadow-md"
               >
-                Log out
+                {t('nav.logOut')}
               </button>
             </>
           ) : (
@@ -380,14 +386,14 @@ export default function NavHeader() {
                 href="/login"
                 className={navLink}
               >
-                Log in
+                {t('nav.login')}
               </Link>
 
               <Link
                 href="/register"
                 className="rounded-xl bg-terracotta-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-terracotta-700 hover:shadow-md"
               >
-                Join Amana
+                {t('nav.join')}
               </Link>
             </>
           )}
@@ -416,7 +422,7 @@ export default function NavHeader() {
                 href="/search"
                 className="block rounded-xl px-4 py-3 font-medium text-teal-900 hover:bg-white"
               >
-                Find Artisans
+                {t('nav.findArtisans')}
               </Link>
             )}
 
@@ -426,7 +432,7 @@ export default function NavHeader() {
                 onClick={() => setServicesOpen(!servicesOpen)}
                 className="flex w-full items-center justify-between rounded-xl px-4 py-3 text-left font-medium text-teal-900 hover:bg-white"
               >
-                Services
+                {t('nav.services')}
                 <span>{servicesOpen ? '−' : '+'}</span>
               </button>
 
@@ -436,49 +442,49 @@ export default function NavHeader() {
                     href="/search?category=plumber"
                     className="block rounded-lg px-4 py-2.5 text-sm text-teal-900 hover:bg-white"
                   >
-                    🔧 Plumbing
+                    🔧 {t('nav.plumbing')}
                   </Link>
 
                   <Link
                     href="/search?category=electrician"
                     className="block rounded-lg px-4 py-2.5 text-sm text-teal-900 hover:bg-white"
                   >
-                    ⚡ Electrical
+                    ⚡ {t('nav.electrical')}
                   </Link>
 
                   <Link
                     href="/search?category=solar%20technician"
                     className="block rounded-lg px-4 py-2.5 text-sm text-teal-900 hover:bg-white"
                   >
-                    ☀️ Solar
+                    ☀️ {t('nav.solar')}
                   </Link>
 
                   <Link
                     href="/search?category=carpenter"
                     className="block rounded-lg px-4 py-2.5 text-sm text-teal-900 hover:bg-white"
                   >
-                    🪚 Carpentry
+                    🪚 {t('nav.carpentry')}
                   </Link>
 
                   <Link
                     href="/search?category=tailor"
                     className="block rounded-lg px-4 py-2.5 text-sm text-teal-900 hover:bg-white"
                   >
-                    🧵 Tailoring
+                    🧵 {t('nav.tailoring')}
                   </Link>
 
                   <Link
                     href="/search?category=mechanic"
                     className="block rounded-lg px-4 py-2.5 text-sm text-teal-900 hover:bg-white"
                   >
-                    🚗 Auto Repair
+                    🚗 {t('nav.autoRepair')}
                   </Link>
 
                   <Link
                     href="/search"
                     className="block px-4 py-2.5 text-sm font-semibold text-terracotta-600"
                   >
-                    View all services →
+                    {t('nav.viewAllServices')}
                   </Link>
                 </div>
               )}
@@ -488,7 +494,7 @@ export default function NavHeader() {
               href="/#how-it-works"
               className="block rounded-xl px-4 py-3 font-medium text-teal-900 hover:bg-white"
             >
-              How It Works
+              {t('nav.howItWorks')}
             </Link>
 
             {!isArtisan && (
@@ -498,7 +504,7 @@ export default function NavHeader() {
                   onClick={() => setArtisanOpen(!artisanOpen)}
                   className="flex w-full items-center justify-between rounded-xl px-4 py-3 text-left font-medium text-teal-900 hover:bg-white"
                 >
-                  For Artisans
+                  {t('nav.forArtisans')}
                   <span>{artisanOpen ? '−' : '+'}</span>
                 </button>
 
@@ -508,21 +514,21 @@ export default function NavHeader() {
                       href="/register"
                       className="block rounded-lg px-4 py-2.5 text-sm text-teal-900 hover:bg-white"
                     >
-                      Become an Artisan
+                      {t('nav.becomeArtisan')}
                     </Link>
 
                     <Link
                       href="/edit-profile"
                       className="block rounded-lg px-4 py-2.5 text-sm text-teal-900 hover:bg-white"
                     >
-                      Create Your Profile
+                      {t('nav.createProfile')}
                     </Link>
 
                     <Link
                       href="/help"
                       className="block rounded-lg px-4 py-2.5 text-sm text-teal-900 hover:bg-white"
                     >
-                      Artisan Guide
+                      {t('nav.artisanGuide')}
                     </Link>
                   </div>
                 )}
@@ -534,7 +540,7 @@ export default function NavHeader() {
                 href="/dashboard"
                 className="block rounded-xl px-4 py-3 font-medium text-teal-900 hover:bg-white"
               >
-                Edit Profile
+                {t('nav.editProfile')}
               </Link>
             )}
 
@@ -543,7 +549,7 @@ export default function NavHeader() {
                 href="/admin"
                 className="block rounded-xl px-4 py-3 font-medium text-teal-900 hover:bg-white"
               >
-                Admin
+                {t('nav.admin')}
               </Link>
             )}
 
@@ -551,7 +557,7 @@ export default function NavHeader() {
               href="/help"
               className="block rounded-xl px-4 py-3 font-medium text-teal-900 hover:bg-white"
             >
-              Help
+              {t('nav.help')}
             </Link>
 
             <div className="my-4 border-t border-teal-900/10" />
@@ -563,7 +569,7 @@ export default function NavHeader() {
                     href="/dashboard"
                     className="block rounded-xl px-4 py-3 font-medium text-teal-900 hover:bg-white"
                   >
-                    Dashboard
+                    {t('nav.dashboard')}
                   </Link>
                 )}
 
@@ -571,7 +577,7 @@ export default function NavHeader() {
                   onClick={handleLogout}
                   className="mt-2 w-full rounded-xl border border-terracotta-600 px-4 py-3 text-left font-semibold text-terracotta-600 hover:bg-terracotta-600 hover:text-white"
                 >
-                  Log out
+                  {t('nav.logOut')}
                 </button>
               </>
             ) : (
@@ -580,14 +586,14 @@ export default function NavHeader() {
                   href="/login"
                   className="block rounded-xl px-4 py-3 font-medium text-teal-900 hover:bg-white"
                 >
-                  Log in
+                  {t('nav.login')}
                 </Link>
 
                 <Link
                   href="/register"
                   className="mt-2 block rounded-xl bg-terracotta-600 px-4 py-3 text-center font-semibold text-white hover:bg-terracotta-700"
                 >
-                  Join Amana
+                  {t('nav.join')}
                 </Link>
               </>
             )}

@@ -5,6 +5,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { verifyEmail } from '@/lib/api/auth';
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+
 function VerifyEmailContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -29,7 +31,7 @@ function VerifyEmailContent() {
 
         if (pendingTrade && data.user.role === 'artisan') {
           try {
-            await fetch(`${process.env.NEXT_PUBLIC_API_URL}/profiles/artisan`, {
+            await fetch(`${API_URL}/profiles/artisan`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',

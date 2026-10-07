@@ -1,4 +1,4 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
 export async function loginUser(phone: string, password: string) {
   const response = await fetch(`${API_BASE_URL}/auth/login`, {
@@ -15,34 +15,16 @@ export async function loginUser(phone: string, password: string) {
   return response.json();
 }
 
-export async function registerUser(
-  phone: string,
-  email: string,
-  password: string,
-  role: 'customer' | 'artisan'
-) {
+export async function registerUser(phone: string, password: string, role: 'customer' | 'artisan') {
   const response = await fetch(`${API_BASE_URL}/auth/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ phone, email, password, role }),
+    body: JSON.stringify({ phone, password, role }),
   });
 
   if (!response.ok) {
     const errorData = await response.json();
     throw new Error(errorData.message || 'Registration failed');
-  }
-
-  return response.json();
-}
-
-export async function verifyEmail(token: string) {
-  const response = await fetch(
-    `${API_BASE_URL}/auth/verify-email?token=${encodeURIComponent(token)}`
-  );
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => null);
-    throw new Error(errorData?.message || 'Verification failed');
   }
 
   return response.json();
