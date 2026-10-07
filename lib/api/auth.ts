@@ -29,3 +29,16 @@ export async function registerUser(phone: string, password: string, role: 'custo
 
   return response.json();
 }
+
+export async function verifyEmail(token: string) {
+  const response = await fetch(
+    `${API_BASE_URL}/auth/verify-email?token=${encodeURIComponent(token)}`
+  );
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || 'This link is invalid or has expired.');
+  }
+
+  return response.json();
+}
