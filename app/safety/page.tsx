@@ -2,128 +2,107 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
+
+/*
+  The text values below are translation KEYS (e.g. "safety.s1.title").
+  They are translated where they are shown, with t(...).
+*/
 
 const safetySections = [
   {
     id: "before-hiring",
     number: "01",
-    title: "Before you hire",
-    description:
-      "Take a few moments to understand who you're hiring and what the job involves.",
+    title: "safety.s1.title",
+    description: "safety.s1.desc",
     items: [
       {
         icon: "👤",
-        title: "Review the artisan profile",
-        text: "Look through the artisan's services, experience, portfolio, location, and profile information.",
+        title: "safety.s1.i1.title",
+        text: "safety.s1.i1.text",
       },
       {
         icon: "⭐",
-        title: "Check ratings and reviews",
-        text: "Use reviews from previous customers to understand the artisan's work and communication.",
+        title: "safety.s1.i2.title",
+        text: "safety.s1.i2.text",
       },
       {
         icon: "📸",
-        title: "Look at their work",
-        text: "Review photos or videos of previous work when available. A portfolio can help you understand their experience.",
+        title: "safety.s1.i3.title",
+        text: "safety.s1.i3.text",
       },
       {
         icon: "💬",
-        title: "Discuss the job",
-        text: "Explain what you need, ask questions, and make sure both sides understand the work before starting.",
+        title: "safety.s1.i4.title",
+        text: "safety.s1.i4.text",
       },
     ],
   },
   {
     id: "during-job",
     number: "02",
-    title: "During the job",
-    description:
-      "Clear communication and agreed expectations help make the experience better for everyone.",
+    title: "safety.s2.title",
+    description: "safety.s2.desc",
     items: [
       {
         icon: "📋",
-        title: "Confirm the scope",
-        text: "Make sure you and the artisan agree on what needs to be done before work begins.",
+        title: "safety.s2.i1.title",
+        text: "safety.s2.i1.text",
       },
       {
         icon: "💰",
-        title: "Understand the price",
-        text: "Discuss labour, materials, transport, and any other expected costs before proceeding.",
+        title: "safety.s2.i2.title",
+        text: "safety.s2.i2.text",
       },
       {
         icon: "📱",
-        title: "Keep communication clear",
-        text: "Use clear messages and keep important job details available for reference.",
+        title: "safety.s2.i3.title",
+        text: "safety.s2.i3.text",
       },
       {
         icon: "🔐",
-        title: "Protect your account",
-        text: "Never share your password, login codes, OTPs, or other account security information with anyone.",
+        title: "safety.s2.i4.title",
+        text: "safety.s2.i4.text",
       },
     ],
   },
   {
     id: "for-artisans",
     number: "03",
-    title: "For artisans",
-    description:
-      "A safe marketplace works both ways. Customers and artisans should treat each other with respect.",
+    title: "safety.s3.title",
+    description: "safety.s3.desc",
     items: [
       {
         icon: "🧰",
-        title: "Describe your services honestly",
-        text: "Show customers what you actually do and keep your service information accurate.",
+        title: "safety.s3.i1.title",
+        text: "safety.s3.i1.text",
       },
       {
         icon: "📸",
-        title: "Show real work",
-        text: "Use photos and videos that represent your own work and experience.",
+        title: "safety.s3.i2.title",
+        text: "safety.s3.i2.text",
       },
       {
         icon: "🤝",
-        title: "Agree before starting",
-        text: "Discuss the job requirements, expected costs, materials, and timing with the customer.",
+        title: "safety.s3.i3.title",
+        text: "safety.s3.i3.text",
       },
       {
         icon: "🚩",
-        title: "Report suspicious behaviour",
-        text: "If a customer or another user behaves suspiciously or violates Amana rules, report the issue.",
+        title: "safety.s3.i4.title",
+        text: "safety.s3.i4.text",
       },
     ],
   },
 ];
 
 const faqs = [
-  {
-    question: "Does Amana guarantee every artisan?",
-    answer:
-      "Amana provides a platform for customers and artisans to connect. Customers should review available profile information, portfolios, ratings, reviews, and job details before hiring. Any verification labels shown on Amana should only be treated as verification for the information or checks that Amana actually performs.",
-  },
-  {
-    question: "What should I check before hiring an artisan?",
-    answer:
-      "Start with the artisan's profile, services, portfolio, reviews, rating, experience, and service area. Then discuss your specific job requirements, timing, materials, and expected price before work begins.",
-  },
-  {
-    question: "Should I share my OTP or password with an artisan?",
-    answer:
-      "No. Never share your Amana password, OTP, verification code, or other account security information with another person.",
-  },
-  {
-    question: "What should I do if something feels suspicious?",
-    answer:
-      "Stop and take a moment before continuing. Do not share sensitive information or make a decision under pressure. Use Amana's reporting or support options to report the problem.",
-  },
-  {
-    question: "How should customers and artisans agree on payment?",
-    answer:
-      "Both sides should clearly understand the expected cost before work starts. Discuss labour, materials, transport, additional work, and any other relevant costs so there are fewer surprises later.",
-  },
-  {
-    question: "Can I report a problem with another user?",
-    answer:
-      "Yes. If you experience suspicious, abusive, fraudulent, or inappropriate behaviour, report the issue through the available Amana support and reporting channels.",
-  },
+  { question: "safety.q1", answer: "safety.a1" },
+  { question: "safety.q2", answer: "safety.a2" },
+  { question: "safety.q3", answer: "safety.a3" },
+  { question: "safety.q4", answer: "safety.a4" },
+  { question: "safety.q5", answer: "safety.a5" },
+  { question: "safety.q6", answer: "safety.a6" },
 ];
 
 function ShieldIcon({ size = 24 }: { size?: number }) {
@@ -197,6 +176,8 @@ function CheckIcon() {
 }
 
 export default function SafetyPage() {
+  const { t } = useLanguage();
+
   const [openFaq, setOpenFaq] = useState<number | null>(0);
 
   const scrollToSection = (id: string) => {
@@ -227,12 +208,12 @@ export default function SafetyPage() {
               href="/"
               className="transition-colors hover:text-white"
             >
-              Home
+              {t("safety.hero.home")}
             </Link>
 
             <span>/</span>
 
-            <span className="text-white/90">Safety & Trust</span>
+            <span className="text-white/90">{t("safety.hero.current")}</span>
           </div>
 
           <div className="grid items-center gap-14 lg:grid-cols-[1.1fr_0.9fr]">
@@ -243,20 +224,18 @@ export default function SafetyPage() {
                   <ShieldIcon size={15} />
                 </span>
 
-                <span>Amana Safety & Trust</span>
+                <span>{t("safety.hero.badge")}</span>
               </div>
 
               <h1 className="max-w-4xl text-5xl font-semibold leading-[1.02] tracking-[-0.04em] sm:text-6xl lg:text-7xl">
-                Your safety
+                {t("safety.hero.title1")}
                 <span className="block text-[#D5A63A]">
-                  comes first.
+                  {t("safety.hero.title2")}
                 </span>
               </h1>
 
               <p className="mt-7 max-w-2xl text-lg leading-8 text-white/70 sm:text-xl">
-                A safer way to find, hire, and work with local artisans.
-                Learn how to protect your account, understand a job, and make
-                better decisions on Amana.
+                {t("safety.hero.text")}
               </p>
 
               <div className="mt-9 flex flex-col gap-3 sm:flex-row">
@@ -264,7 +243,7 @@ export default function SafetyPage() {
                   href="/artisans"
                   className="group inline-flex items-center justify-center gap-2 rounded-xl bg-[#C85A3F] px-6 py-3.5 font-medium text-white shadow-lg shadow-black/10 transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#A94632]"
                 >
-                  Find an Artisan
+                  {t("safety.hero.ctaFind")}
                   <ArrowIcon size={18} />
                 </Link>
 
@@ -273,7 +252,7 @@ export default function SafetyPage() {
                   onClick={() => scrollToSection("before-hiring")}
                   className="inline-flex items-center justify-center rounded-xl border border-white/15 bg-white/5 px-6 py-3.5 font-medium text-white transition-all duration-300 hover:bg-white/10"
                 >
-                  Learn how to stay safe
+                  {t("safety.hero.ctaLearn")}
                 </button>
               </div>
             </div>
@@ -288,7 +267,7 @@ export default function SafetyPage() {
                       AMANA
                     </p>
                     <p className="mt-1 font-medium text-white">
-                      Trust matters
+                      {t("safety.card.trustMatters")}
                     </p>
                   </div>
 
@@ -300,10 +279,10 @@ export default function SafetyPage() {
                 {/* Trust items */}
                 <div className="space-y-3 py-5">
                   {[
-                    "Review artisan profiles",
-                    "Check portfolios & reviews",
-                    "Agree on the job",
-                    "Protect your account",
+                    "safety.card.i1",
+                    "safety.card.i2",
+                    "safety.card.i3",
+                    "safety.card.i4",
                   ].map((item, index) => (
                     <div
                       key={item}
@@ -315,7 +294,7 @@ export default function SafetyPage() {
 
                       <div className="flex-1">
                         <p className="text-sm font-medium text-white">
-                          {item}
+                          {t(item)}
                         </p>
                       </div>
 
@@ -329,12 +308,11 @@ export default function SafetyPage() {
                 {/* Bottom */}
                 <div className="rounded-2xl bg-[#C85A3F] p-5">
                   <p className="text-xs uppercase tracking-[0.16em] text-white/60">
-                    Simple principle
+                    {t("safety.card.simple")}
                   </p>
 
                   <p className="mt-2 text-lg font-medium leading-7">
-                    Know who you&apos;re hiring. Understand the job. Communicate
-                    clearly.
+                    {t("safety.card.principle")}
                   </p>
                 </div>
               </div>
@@ -348,10 +326,10 @@ export default function SafetyPage() {
 
                   <div>
                     <p className="text-xs text-[#60736F]">
-                      Safety starts with
+                      {t("safety.card.badgeLabel")}
                     </p>
                     <p className="font-semibold text-[#123D38]">
-                      informed decisions
+                      {t("safety.card.badgeStrong")}
                     </p>
                   </div>
                 </div>
@@ -368,17 +346,19 @@ export default function SafetyPage() {
         <div className="mx-auto max-w-7xl px-5 py-16 sm:px-8 lg:px-12">
           <div className="max-w-2xl">
             <p className="text-sm font-semibold uppercase tracking-[0.16em] text-[#C85A3F]">
-              The Amana approach
+              {t("safety.approach.eyebrow")}
             </p>
 
             <h2 className="mt-3 text-3xl font-semibold tracking-[-0.03em] text-[#083A35] sm:text-4xl">
-              Trust is built through
-              <span className="text-[#C85A3F]"> transparency.</span>
+              {t("safety.approach.title1")}
+              <span className="text-[#C85A3F]">
+                {" "}
+                {t("safety.approach.title2")}
+              </span>
             </h2>
 
             <p className="mt-4 leading-7 text-[#60736F]">
-              Amana is designed to give customers and artisans useful
-              information before they decide to work together.
+              {t("safety.approach.text")}
             </p>
           </div>
 
@@ -386,20 +366,20 @@ export default function SafetyPage() {
             {[
               {
                 number: "01",
-                title: "Know who you're hiring",
-                text: "Explore profiles, services, portfolios, ratings, reviews, and available information before making a decision.",
+                title: "safety.approach.a1.title",
+                text: "safety.approach.a1.text",
                 icon: "👤",
               },
               {
                 number: "02",
-                title: "Understand the job",
-                text: "Discuss what needs to be done, timing, materials, pricing, and expectations before starting.",
+                title: "safety.approach.a2.title",
+                text: "safety.approach.a2.text",
                 icon: "📋",
               },
               {
                 number: "03",
-                title: "Keep communication clear",
-                text: "Good communication helps customers and artisans avoid misunderstandings and work together more confidently.",
+                title: "safety.approach.a3.title",
+                text: "safety.approach.a3.text",
                 icon: "🤝",
               },
             ].map((item) => (
@@ -418,11 +398,11 @@ export default function SafetyPage() {
                 </div>
 
                 <h3 className="mt-7 text-xl font-semibold text-[#083A35]">
-                  {item.title}
+                  {t(item.title)}
                 </h3>
 
                 <p className="mt-3 leading-7 text-[#60736F]">
-                  {item.text}
+                  {t(item.text)}
                 </p>
               </div>
             ))}
@@ -439,20 +419,20 @@ export default function SafetyPage() {
             <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
               <div>
                 <p className="font-semibold text-[#083A35]">
-                  Looking for something specific?
+                  {t("safety.nav.looking")}
                 </p>
 
                 <p className="mt-1 text-sm text-[#60736F]">
-                  Jump directly to the section you need.
+                  {t("safety.nav.jump")}
                 </p>
               </div>
 
               <div className="flex flex-wrap gap-2">
                 {[
-                  ["before-hiring", "Before you hire"],
-                  ["during-job", "During the job"],
-                  ["for-artisans", "For artisans"],
-                  ["faqs", "FAQs"],
+                  ["before-hiring", "safety.s1.title"],
+                  ["during-job", "safety.s2.title"],
+                  ["for-artisans", "safety.s3.title"],
+                  ["faqs", "safety.sidebar.faqs"],
                 ].map(([id, label]) => (
                   <button
                     key={id}
@@ -460,7 +440,7 @@ export default function SafetyPage() {
                     onClick={() => scrollToSection(id)}
                     className="rounded-xl border border-[#DCE5E1] bg-[#F8F3E8] px-4 py-2.5 text-sm font-medium text-[#0F4C45] transition-colors hover:border-[#0F4C45]/30 hover:bg-[#0F4C45] hover:text-white"
                   >
-                    {label}
+                    {t(label)}
                   </button>
                 ))}
               </div>
@@ -479,7 +459,7 @@ export default function SafetyPage() {
             <aside className="hidden lg:block">
               <div className="sticky top-28">
                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#60736F]">
-                  Safety guide
+                  {t("safety.sidebar.guide")}
                 </p>
 
                 <nav className="mt-5 space-y-1">
@@ -494,7 +474,7 @@ export default function SafetyPage() {
                         {section.number}
                       </span>
 
-                      <span>{section.title}</span>
+                      <span>{t(section.title)}</span>
                     </button>
                   ))}
 
@@ -507,7 +487,7 @@ export default function SafetyPage() {
                       04
                     </span>
 
-                    <span>FAQs</span>
+                    <span>{t("safety.sidebar.faqs")}</span>
                   </button>
                 </nav>
 
@@ -517,18 +497,18 @@ export default function SafetyPage() {
                   </div>
 
                   <p className="mt-4 text-sm font-medium">
-                    Something doesn't feel right?
+                    {t("safety.sidebar.helpTitle")}
                   </p>
 
                   <p className="mt-2 text-xs leading-5 text-white/55">
-                    Stop, protect your information, and report the issue.
+                    {t("safety.sidebar.helpText")}
                   </p>
 
                   <Link
                     href="/contact"
                     className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-[#D5A63A]"
                   >
-                    Contact support
+                    {t("safety.sidebar.contact")}
                     <ArrowIcon size={15} />
                   </Link>
                 </div>
@@ -557,11 +537,11 @@ export default function SafetyPage() {
                       </div>
 
                       <h2 className="text-3xl font-semibold tracking-[-0.03em] text-[#083A35] sm:text-4xl">
-                        {section.title}
+                        {t(section.title)}
                       </h2>
 
                       <p className="mt-3 max-w-2xl leading-7 text-[#60736F]">
-                        {section.description}
+                        {t(section.description)}
                       </p>
                     </div>
                   </div>
@@ -584,11 +564,11 @@ export default function SafetyPage() {
                         </div>
 
                         <h3 className="mt-6 text-lg font-semibold text-[#083A35]">
-                          {item.title}
+                          {t(item.title)}
                         </h3>
 
                         <p className="mt-2 text-sm leading-6 text-[#60736F]">
-                          {item.text}
+                          {t(item.text)}
                         </p>
                       </div>
                     ))}
@@ -613,27 +593,25 @@ export default function SafetyPage() {
                 </div>
 
                 <p className="mt-7 text-sm font-semibold uppercase tracking-[0.16em] text-[#D5A63A]">
-                  Important reminder
+                  {t("safety.reminder.eyebrow")}
                 </p>
 
                 <h2 className="mt-3 max-w-xl text-3xl font-semibold tracking-[-0.03em] sm:text-4xl">
-                  Your account belongs to you.
+                  {t("safety.reminder.title")}
                 </h2>
 
                 <p className="mt-5 max-w-xl leading-7 text-white/65">
-                  Amana will never need your password or personal security
-                  codes from another person. Keep your login details private
-                  and be careful with unexpected requests.
+                  {t("safety.reminder.text")}
                 </p>
               </div>
 
               <div className="border-t border-white/10 bg-white/[0.04] p-8 sm:p-12 lg:border-l lg:border-t-0 lg:p-16">
                 <div className="space-y-4">
                   {[
-                    "Never share your password",
-                    "Never share an OTP or login code",
-                    "Be careful with unexpected payment requests",
-                    "Report suspicious behaviour",
+                    "safety.reminder.r1",
+                    "safety.reminder.r2",
+                    "safety.reminder.r3",
+                    "safety.reminder.r4",
                   ].map((item) => (
                     <div
                       key={item}
@@ -644,7 +622,7 @@ export default function SafetyPage() {
                       </span>
 
                       <span className="text-sm text-white/80">
-                        {item}
+                        {t(item)}
                       </span>
                     </div>
                   ))}
@@ -665,20 +643,18 @@ export default function SafetyPage() {
 
             <div className="relative">
               <p className="text-sm font-semibold uppercase tracking-[0.16em] text-white/60">
-                Need help?
+                {t("safety.report.eyebrow")}
               </p>
 
               <h2 className="mt-3 max-w-2xl text-3xl font-semibold tracking-[-0.03em] sm:text-4xl">
-                Something went wrong?
+                {t("safety.report.title1")}
                 <span className="block text-[#F8E9B8]">
-                  We want to know about it.
+                  {t("safety.report.title2")}
                 </span>
               </h2>
 
               <p className="mt-5 max-w-2xl leading-7 text-white/75">
-                If you experience suspicious behaviour, a serious problem, or
-                something that makes you uncomfortable, use Amana's support
-                channels to report it.
+                {t("safety.report.text")}
               </p>
 
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
@@ -686,7 +662,7 @@ export default function SafetyPage() {
                   href="/contact"
                   className="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-6 py-3.5 font-medium text-[#A94632] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#F8F3E8]"
                 >
-                  Report a problem
+                  {t("safety.report.report")}
                   <ArrowIcon size={18} />
                 </Link>
 
@@ -694,7 +670,7 @@ export default function SafetyPage() {
                   href="/help"
                   className="inline-flex items-center justify-center rounded-xl border border-white/20 bg-white/5 px-6 py-3.5 font-medium text-white transition-colors hover:bg-white/10"
                 >
-                  Visit Help Center
+                  {t("safety.report.visit")}
                 </Link>
               </div>
             </div>
@@ -712,17 +688,19 @@ export default function SafetyPage() {
         <div className="mx-auto max-w-4xl px-5 sm:px-8">
           <div className="text-center">
             <p className="text-sm font-semibold uppercase tracking-[0.16em] text-[#C85A3F]">
-              Frequently asked questions
+              {t("safety.faqSection.eyebrow")}
             </p>
 
             <h2 className="mt-3 text-3xl font-semibold tracking-[-0.03em] text-[#083A35] sm:text-4xl">
-              Safety questions,
-              <span className="text-[#C85A3F]"> answered.</span>
+              {t("safety.faqSection.title1")}
+              <span className="text-[#C85A3F]">
+                {" "}
+                {t("safety.faqSection.title2")}
+              </span>
             </h2>
 
             <p className="mx-auto mt-4 max-w-2xl leading-7 text-[#60736F]">
-              Simple answers to common questions about staying safe while
-              using Amana.
+              {t("safety.faqSection.text")}
             </p>
           </div>
 
@@ -741,7 +719,7 @@ export default function SafetyPage() {
                     aria-expanded={isOpen}
                   >
                     <span className="text-base font-semibold text-[#083A35] sm:text-lg">
-                      {faq.question}
+                      {t(faq.question)}
                     </span>
 
                     <span
@@ -764,7 +742,7 @@ export default function SafetyPage() {
                   >
                     <div className="overflow-hidden">
                       <p className="px-5 pb-6 pr-14 text-sm leading-7 text-[#60736F] sm:px-7 sm:pb-7">
-                        {faq.answer}
+                        {t(faq.answer)}
                       </p>
                     </div>
                   </div>
@@ -785,12 +763,11 @@ export default function SafetyPage() {
           </div>
 
           <h2 className="mt-7 text-4xl font-semibold tracking-[-0.04em] text-[#083A35] sm:text-5xl">
-            Ready to find the right artisan?
+            {t("safety.cta.title")}
           </h2>
 
           <p className="mx-auto mt-5 max-w-2xl leading-7 text-[#60736F]">
-            Explore artisan profiles, compare available information, and
-            choose someone who fits your job.
+            {t("safety.cta.text")}
           </p>
 
           <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
@@ -798,7 +775,7 @@ export default function SafetyPage() {
               href="/artisans"
               className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#C85A3F] px-7 py-3.5 font-medium text-white shadow-lg transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#A94632]"
             >
-              Find an Artisan
+              {t("safety.cta.find")}
               <ArrowIcon size={18} />
             </Link>
 
@@ -806,7 +783,7 @@ export default function SafetyPage() {
               href="/how-it-works"
               className="inline-flex items-center justify-center rounded-xl border border-[#0F4C45]/15 bg-white px-7 py-3.5 font-medium text-[#0F4C45] transition-all duration-300 hover:border-[#0F4C45]/30 hover:bg-[#0F4C45] hover:text-white"
             >
-              How Amana works
+              {t("safety.cta.how")}
             </Link>
           </div>
         </div>
