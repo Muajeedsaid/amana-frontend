@@ -355,6 +355,13 @@ export const translations = {
     },
 
     artisan: {
+      contact: {
+        eyebrow: 'Contact',
+        chatBadge: 'CHAT',
+        messageBtn: 'Send a message',
+        whatsappBtn: 'Chat on WhatsApp',
+        hint: 'Send a message in Amana or chat on WhatsApp. You will be asked to log in first so artisans know who is writing.',
+      },
       notFound: {
         eyebrow: 'Profile unavailable',
         title: 'Artisan not found',
@@ -975,6 +982,54 @@ export const translations = {
       logIn: 'Log in',
       terms: 'By creating an account, you agree to use Amana responsibly and respectfully.',
     },
+    msg: {
+      chat: {
+        title: 'Message {name}',
+        subtitle: '{name} will see your message as soon as they open Amana.',
+        placeholder: 'Write your message...',
+        send: 'Send',
+        sending: 'Sending...',
+        empty: 'Say hello and describe what you need: the kind of job, your area and when you need it.',
+        loading: 'Loading messages...',
+        loadError: 'Could not load messages.',
+        sendError: 'Could not send. Check your connection and try again.',
+        sentNotice: 'Your message was sent. You will be notified when {name} replies.',
+        close: 'Close',
+        customersOnly: 'Messaging artisans is for customers. Log in with a customer account to send a message.',
+      },
+      gate: {
+        title: 'Log in or create an account to continue',
+        text: 'For everyone\u2019s safety, please log in before contacting {name}. You will come straight back to this page.',
+        login: 'Log in',
+        register: 'Create account',
+        cancel: 'Not now',
+        welcomeBack: 'You are logged in. Tap WhatsApp to continue.',
+      },
+      bell: {
+        title: 'Messages',
+        none: 'No new messages',
+        viewAll: 'View all messages',
+        new: '{count} new',
+        aria: 'Messages, {count} unread',
+      },
+      inbox: {
+        loading: 'Loading conversations...',
+        emptyTitle: 'No messages yet',
+        emptyArtisan: 'When a customer messages you, it will appear here and you will get a notification.',
+        emptyCustomer: 'You have not messaged any artisan yet. Find an artisan and say hello.',
+        findArtisans: 'Find artisans',
+        pick: 'Choose a conversation to read and reply.',
+        back: 'Back',
+        viewProfile: 'View profile',
+        customer: 'Customer',
+      },
+      page: {
+        eyebrow: 'Inbox',
+        title: 'Your messages',
+        text: 'Every conversation with the artisans you have contacted. Replies appear here and in the bell.',
+      },
+    },
+
     common: {
       loading: 'Loading...',
       error: 'Something went wrong',
@@ -1326,6 +1381,13 @@ export const translations = {
     },
 
     artisan: {
+      contact: {
+        eyebrow: 'Tuntuɓa',
+        chatBadge: 'HIRA',
+        messageBtn: 'Aika saƙo',
+        whatsappBtn: 'Yi hira a WhatsApp',
+        hint: 'Ka aika saƙo a Amana ko ka yi hira ta WhatsApp. Za a nemi ka shiga tukuna domin ma’aikata su san wanda ke rubuto musu.',
+      },
       notFound: {
         eyebrow: 'Bayani ba ya nan',
         title: 'Ba a sami ma’aikaci ba',
@@ -1947,6 +2009,54 @@ export const translations = {
       logIn: 'Shiga',
       terms: 'Ta hanyar ƙirƙirar asusu, kun yarda ku yi amfani da Amana cikin kyakkyawan hali da girmamawa.',
     },
+    msg: {
+      chat: {
+        title: 'Aika saƙo ga {name}',
+        subtitle: '{name} zai ga saƙonka da zarar ya buɗe Amana.',
+        placeholder: 'Rubuta saƙonka...',
+        send: 'Aika',
+        sending: 'Ana aikawa...',
+        empty: 'Gaishe shi, ka bayyana abin da kake buƙata: irin aikin, unguwarka da lokacin da kake so.',
+        loading: 'Ana ɗauko saƙonni...',
+        loadError: 'Ba a iya ɗauko saƙonni ba.',
+        sendError: 'Ba a iya aikawa ba. Ka duba intanet ɗinka ka sake gwadawa.',
+        sentNotice: 'An aika saƙonka. Za a sanar da kai idan {name} ya amsa.',
+        close: 'Rufe',
+        customersOnly: 'Aika saƙo ga ma’aikata na abokan ciniki ne. Ka shiga da asusun abokin ciniki domin aika saƙo.',
+      },
+      gate: {
+        title: 'Ka shiga ko ka buɗe asusu domin ci gaba',
+        text: 'Domin tsaron kowa, sai ka shiga kafin ka tuntuɓi {name}. Za ka dawo wannan shafin kai tsaye.',
+        login: 'Shiga',
+        register: 'Buɗe asusu',
+        cancel: 'Ba yanzu ba',
+        welcomeBack: 'Ka shiga. Ka danna WhatsApp domin ci gaba.',
+      },
+      bell: {
+        title: 'Saƙonni',
+        none: 'Babu sabon saƙo',
+        viewAll: 'Duba duk saƙonni',
+        new: '{count} sababbi',
+        aria: 'Saƙonni, {count} ba a karanta ba',
+      },
+      inbox: {
+        loading: 'Ana ɗauko tattaunawa...',
+        emptyTitle: 'Babu saƙo tukuna',
+        emptyArtisan: 'Idan abokin ciniki ya aiko maka saƙo, zai bayyana a nan kuma za ka sami sanarwa.',
+        emptyCustomer: 'Ba ka aika wa wani ma’aikaci saƙo ba tukuna. Ka nemo ma’aikaci ka gaishe shi.',
+        findArtisans: 'Nemo ma’aikata',
+        pick: 'Zaɓi tattaunawa domin karantawa da amsawa.',
+        back: 'Koma',
+        viewProfile: 'Duba bayanansa',
+        customer: 'Abokin ciniki',
+      },
+      page: {
+        eyebrow: 'Akwatin saƙo',
+        title: 'Saƙonninka',
+        text: 'Duk tattaunawar da ka yi da ma’aikatan da ka tuntuɓa. Amsoshi suna bayyana a nan da kuma a ƙararrawa.',
+      },
+    },
+
     common: {
       loading: 'Ana lodawa...',
       error: 'Wani abu ya faru ba daidai ba',

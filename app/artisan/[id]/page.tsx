@@ -9,7 +9,10 @@ import {
   ArtisanProfileDetail,
   ArtisanReview,
 } from '@/lib/api/profiles';
-import { createBooking } from '@/lib/api/bookings';
+import ChatModal from '@/components/messaging/ChatModal';
+import AuthGate from '@/components/messaging/AuthGate';
+import { getSession, saveReturnTo } from '@/lib/auth/session';
+import { OPEN_CHAT_EVENT } from '@/lib/api/messages';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 
 /* =========================================================
@@ -162,14 +165,41 @@ export default function ArtisanProfilePage() {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
 
-  const [showBookingForm, setShowBookingForm] = useState(false);
-  const [description, setDescription] = useState('');
-  const [bookingLoading, setBookingLoading] = useState(false);
-  const [bookingError, setBookingError] = useState('');
-  const [bookingSent, setBookingSent] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
+  const [gate, setGate] = useState<null | 'message' | 'whatsapp'>(null);
+  const [whatsappReady, setWhatsappReady] = useState(false);
 
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [showAllReviews, setShowAllReviews] = useState(false);
+
+  // Arriving from login/register (?intent=...) or from a notification (?chat=1):
+  // pick up exactly where the visitor left off.
+  useEffect(() => {
+    if (!profile) return;
+
+    const query = new URLSearchParams(window.location.search);
+    const intent = query.get('intent') || (query.get('chat') ? 'message' : null);
+    if (!intent) return;
+
+    window.history.replaceState(null, '', window.location.pathname);
+
+    const session = getSession();
+    if (!session) return;
+
+    if (intent === 'message') {
+      setChatOpen(true);
+    } else if (intent === 'whatsapp') {
+      setWhatsappReady(true);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [profile]);
+
+  // The notification bell asks to open the chat while this page is already open.
+  useEffect(() => {
+    const open = () => setChatOpen(true);
+    window.addEventListener(OPEN_CHAT_EVENT, open);
+    return () => window.removeEventListener(OPEN_CHAT_EVENT, open);
+  }, []);
 
   useEffect(() => {
     if (!id) return;
@@ -334,52 +364,25 @@ export default function ArtisanProfilePage() {
 
   /* ---------- actions ---------- */
 
-  async function handleBookingSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
+  /**
+   * Message and WhatsApp both need a logged-in account. If the visitor is
+   * not logged in we remember exactly where they were, ask them to log in
+   * or register, and bring them back here afterwards.
+   */
+  function requireLogin(intent: 'message' | 'whatsapp') {
+    if (getSession()) return true;
 
-    if (!description.trim()) {
-      setBookingError(t('artisan.booking.describeJob'));
-      return;
-    }
-
-    setBookingLoading(true);
-    setBookingError('');
-
-    try {
-      await createBooking({
-        artisanProfileId: id,
-        description: description.trim(),
-      });
-
-      setBookingSent(true);
-      setShowBookingForm(false);
-      setDescription('');
-    } catch (err: any) {
-      // Server messages are English; fall back to a translated generic one.
-      setBookingError(err?.message || t('artisan.booking.failed'));
-    } finally {
-      setBookingLoading(false);
-    }
-  }
-
-  function openBooking() {
-    setBookingSent(false);
-    setBookingError('');
-    setShowBookingForm(true);
+    saveReturnTo(`/artisan/${id}?intent=${intent}`);
+    setGate(intent);
+    return false;
   }
 
   function handleMessage() {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('amana_token') : null;
-
-    if (!token) {
-      router.push(`/login?redirect=/artisan/${id}`);
-      return;
-    }
-
-    router.push('/dashboard?section=messages');
+    if (!requireLogin('message')) return;
+    setChatOpen(true);
   }
 
-  function handleWhatsApp() {
+  function openWhatsApp() {
     if (!artisanWhatsapp) return;
 
     const digits = artisanWhatsapp.replace(/[^\d]/g, '');
@@ -391,6 +394,12 @@ export default function ArtisanProfilePage() {
     );
 
     window.open(`https://wa.me/${withCountryCode}?text=${message}`, '_blank');
+  }
+
+  function handleWhatsApp() {
+    if (!requireLogin('whatsapp')) return;
+    setWhatsappReady(false);
+    openWhatsApp();
   }
 
   /* ---------- states ---------- */
@@ -430,24 +439,15 @@ export default function ArtisanProfilePage() {
     );
   }
 
-  const bookingCardProps = {
+  const contactCardProps = {
     categoryName,
     rating,
     ratingCount,
-    bookingSent,
-    description,
-    bookingLoading,
-    bookingError,
-    setDescription,
-    onOpen: openBooking,
-    onClose: () => {
-      setShowBookingForm(false);
-      setBookingError('');
-    },
-    onSubmit: handleBookingSubmit,
     onMessage: handleMessage,
     onWhatsApp: artisanWhatsapp ? handleWhatsApp : undefined,
   };
+
+  const chatName = businessName || artisanName;
 
   return (
     <main className="min-h-screen bg-sand-50 pb-24 lg:pb-0 text-teal-900">
@@ -552,28 +552,29 @@ export default function ArtisanProfilePage() {
 
               <div className="profile-enter-delay-4 mt-7 flex flex-col justify-center gap-3 sm:flex-row lg:justify-start">
                 <button
-                  onClick={openBooking}
+                  onClick={handleMessage}
                   className="rounded-xl bg-terracotta-600 px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-terracotta-600/20 transition duration-200 hover:-translate-y-0.5 hover:bg-terracotta-700"
                 >
-                  {t('artisan.hero.hire')}
+                  {t('artisan.hero.message')}
                 </button>
 
                 {artisanWhatsapp && (
                   <button
                     onClick={handleWhatsApp}
-                    className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#25D366]/30 bg-[#25D366]/10 px-6 py-3.5 text-sm font-bold text-[#128C4A] transition hover:-translate-y-0.5 hover:bg-[#25D366]/15"
+                    className={`inline-flex items-center justify-center gap-2 rounded-xl border border-[#25D366]/30 bg-[#25D366]/10 px-6 py-3.5 text-sm font-bold text-[#128C4A] transition hover:-translate-y-0.5 hover:bg-[#25D366]/15 ${
+                      whatsappReady ? 'ring-4 ring-[#25D366]/30' : ''
+                    }`}
                   >
                     {t('artisan.hero.whatsapp')}
                   </button>
                 )}
-
-                <button
-                  onClick={handleMessage}
-                  className="rounded-xl border border-teal-900/15 bg-white px-6 py-3.5 text-sm font-bold text-teal-900 transition hover:-translate-y-0.5 hover:border-teal-900/30 hover:bg-sand-50"
-                >
-                  {t('artisan.hero.message')}
-                </button>
               </div>
+
+              {whatsappReady && (
+                <p className="mt-3 text-center text-sm font-semibold text-[#128C4A] lg:text-left">
+                  {t('msg.gate.welcomeBack')}
+                </p>
+              )}
             </div>
 
             {/* Experience */}
@@ -986,7 +987,7 @@ export default function ArtisanProfilePage() {
         {/* Desktop booking */}
         <aside className="hidden lg:block">
           <div className="sticky top-24 space-y-4">
-            <BookingCard showBookingForm={showBookingForm} {...bookingCardProps} />
+            <ContactCard {...contactCardProps} />
 
             <div className="rounded-2xl border border-teal-900/10 bg-white p-5 shadow-sm">
               <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-teal-900/35">
@@ -1017,54 +1018,44 @@ export default function ArtisanProfilePage() {
 
       {/* Mobile action bar */}
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-teal-900/10 bg-white/95 p-3 shadow-2xl backdrop-blur-xl lg:hidden">
-        {bookingSent ? (
-          <div className="flex items-center justify-center gap-2 py-2 text-sm font-bold text-teal-900">
-            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-teal-900 text-white">
-              ✓
-            </span>
-            {t('artisan.booking.sentShort')}
-          </div>
-        ) : (
-          <div className="mx-auto flex max-w-xl gap-2">
-            {artisanWhatsapp ? (
-              <button
-                onClick={handleWhatsApp}
-                className="flex-1 rounded-xl border border-[#25D366]/30 bg-[#25D366]/10 px-4 py-3 text-sm font-bold text-[#128C4A]"
-              >
-                {t('artisan.hero.whatsapp')}
-              </button>
-            ) : (
-              <button
-                onClick={handleMessage}
-                className="flex-1 rounded-xl border border-teal-900/15 bg-white px-4 py-3 text-sm font-bold text-teal-900"
-              >
-                {t('artisan.hero.message')}
-              </button>
-            )}
-
+        <div className="mx-auto flex max-w-xl gap-2">
+          {artisanWhatsapp && (
             <button
-              onClick={openBooking}
-              className="flex-[1.4] rounded-xl bg-terracotta-600 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-terracotta-600/20"
+              onClick={handleWhatsApp}
+              className={`flex-1 rounded-xl border border-[#25D366]/30 bg-[#25D366]/10 px-4 py-3 text-sm font-bold text-[#128C4A] ${
+                whatsappReady ? 'ring-4 ring-[#25D366]/30' : ''
+              }`}
             >
-              {t('artisan.booking.hireShort')}
+              {t('artisan.hero.whatsapp')}
             </button>
-          </div>
-        )}
+          )}
+
+          <button
+            onClick={handleMessage}
+            className="flex-[1.4] rounded-xl bg-terracotta-600 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-terracotta-600/20"
+          >
+            {t('artisan.hero.message')}
+          </button>
+        </div>
       </div>
 
-      {/* Mobile booking sheet */}
-      {showBookingForm && (
-        <div
-          className="fixed inset-0 z-50 flex items-end bg-teal-900/60 p-0 backdrop-blur-sm lg:hidden"
-          onClick={() => setShowBookingForm(false)}
-        >
-          <div
-            className="w-full max-h-[92vh] overflow-y-auto"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <BookingCard mobile showBookingForm {...bookingCardProps} />
-          </div>
-        </div>
+      {/* Message window */}
+      {chatOpen && (
+        <ChatModal
+          artisanProfileId={id}
+          artisanName={chatName}
+          artisanAvatar={profilePhoto || undefined}
+          onClose={() => setChatOpen(false)}
+        />
+      )}
+
+      {/* Log in / register first */}
+      {gate && (
+        <AuthGate
+          artisanName={chatName}
+          returnTo={`/artisan/${id}?intent=${gate}`}
+          onClose={() => setGate(null)}
+        />
       )}
 
       {/* Image lightbox */}
@@ -1255,59 +1246,34 @@ function TrustItem({ mark, title, text }: { mark: string; title: string; text: s
   );
 }
 
-function BookingCard({
-  mobile = false,
+function ContactCard({
   categoryName,
   rating,
   ratingCount,
-  showBookingForm,
-  bookingSent,
-  description,
-  bookingLoading,
-  bookingError,
-  setDescription,
-  onOpen,
-  onClose,
-  onSubmit,
   onMessage,
   onWhatsApp,
 }: {
-  mobile?: boolean;
   categoryName: string;
   rating: number;
   ratingCount: number;
-  showBookingForm: boolean;
-  bookingSent: boolean;
-  description: string;
-  bookingLoading: boolean;
-  bookingError: string;
-  setDescription: (value: string) => void;
-  onOpen: () => void;
-  onClose: () => void;
-  onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
   onMessage: () => void;
   onWhatsApp?: () => void;
 }) {
   const { t } = useLanguage();
-  const fieldId = mobile ? 'job-description-mobile' : 'job-description';
 
   return (
-    <div
-      className={`${
-        mobile ? 'rounded-t-3xl' : 'rounded-3xl'
-      } border border-teal-900/10 bg-white p-6 shadow-2xl shadow-teal-900/10 md:p-7`}
-    >
+    <div className="rounded-3xl border border-teal-900/10 bg-white p-6 shadow-2xl shadow-teal-900/10 md:p-7">
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-terracotta-600">
-            {t('artisan.booking.eyebrow')}
+            {t('artisan.contact.eyebrow')}
           </p>
 
           <h3 className="mt-2 font-display text-2xl text-teal-900">{categoryName}</h3>
         </div>
 
-        <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-sand-50 text-xs font-black text-teal-900">
-          HIRE
+        <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-sand-50 text-[10px] font-black text-teal-900">
+          {t('artisan.contact.chatBadge')}
         </div>
       </div>
 
@@ -1323,87 +1289,27 @@ function BookingCard({
         )}
       </div>
 
-      {bookingSent ? (
-        <div className="mt-6 rounded-2xl border border-teal-900/10 bg-teal-900/5 p-5">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-teal-900 text-white">
-            ✓
-          </div>
+      <div className="mt-6 space-y-3">
+        <button
+          onClick={onMessage}
+          className="w-full rounded-xl bg-terracotta-600 px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-terracotta-600/20 transition hover:-translate-y-0.5 hover:bg-terracotta-700"
+        >
+          {t('artisan.contact.messageBtn')}
+        </button>
 
-          <p className="mt-4 font-bold text-teal-900">{t('artisan.booking.sentTitle')}</p>
-          <p className="mt-1 text-sm leading-6 text-teal-900/55">
-            {t('artisan.booking.sentText')}
-          </p>
-        </div>
-      ) : showBookingForm ? (
-        <form onSubmit={onSubmit} className="mt-6 space-y-4">
-          <div>
-            <label htmlFor={fieldId} className="mb-2 block text-sm font-bold text-teal-900">
-              {t('artisan.booking.label')}
-            </label>
-
-            <textarea
-              id={fieldId}
-              required
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder={t('artisan.booking.placeholder')}
-              rows={5}
-              className="w-full resize-none rounded-xl border border-teal-900/10 bg-sand-50 px-4 py-3 text-sm text-teal-900 outline-none transition focus:border-terracotta-600 focus:ring-4 focus:ring-terracotta-600/10"
-            />
-          </div>
-
-          {bookingError && (
-            <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
-              {bookingError}
-            </div>
-          )}
-
+        {onWhatsApp && (
           <button
-            type="submit"
-            disabled={bookingLoading}
-            className="w-full rounded-xl bg-terracotta-600 px-5 py-3.5 text-sm font-bold text-white shadow-lg shadow-terracotta-600/15 transition hover:-translate-y-0.5 hover:bg-terracotta-700 disabled:cursor-not-allowed disabled:opacity-60"
+            onClick={onWhatsApp}
+            className="w-full rounded-xl border border-[#25D366]/30 bg-[#25D366]/10 px-6 py-3.5 text-sm font-bold text-[#128C4A] transition hover:-translate-y-0.5 hover:bg-[#25D366]/15"
           >
-            {bookingLoading ? t('artisan.booking.sending') : t('artisan.booking.send')}
+            {t('artisan.contact.whatsappBtn')}
           </button>
+        )}
 
-          <button
-            type="button"
-            onClick={onClose}
-            className="w-full rounded-xl border border-teal-900/15 px-5 py-3 text-sm font-semibold text-teal-900 transition hover:bg-sand-50"
-          >
-            {t('artisan.booking.cancel')}
-          </button>
-        </form>
-      ) : (
-        <div className="mt-6 space-y-3">
-          <button
-            onClick={onOpen}
-            className="w-full rounded-xl bg-terracotta-600 px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-terracotta-600/20 transition hover:-translate-y-0.5 hover:bg-terracotta-700"
-          >
-            {t('artisan.booking.hire')}
-          </button>
-
-          {onWhatsApp && (
-            <button
-              onClick={onWhatsApp}
-              className="w-full rounded-xl border border-[#25D366]/30 bg-[#25D366]/10 px-6 py-3.5 text-sm font-bold text-[#128C4A] transition hover:-translate-y-0.5 hover:bg-[#25D366]/15"
-            >
-              {t('artisan.booking.whatsapp')}
-            </button>
-          )}
-
-          <button
-            onClick={onMessage}
-            className="w-full rounded-xl border border-teal-900/15 px-6 py-3.5 text-sm font-bold text-teal-900 transition hover:bg-sand-50"
-          >
-            {t('artisan.booking.amana')}
-          </button>
-
-          <p className="pt-1 text-center text-[11px] leading-5 text-teal-900/40">
-            {t('artisan.booking.hint')}
-          </p>
-        </div>
-      )}
+        <p className="pt-1 text-center text-[11px] leading-5 text-teal-900/40">
+          {t('artisan.contact.hint')}
+        </p>
+      </div>
     </div>
   );
 }

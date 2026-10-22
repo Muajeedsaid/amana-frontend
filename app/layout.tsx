@@ -2,6 +2,7 @@ import { Fraunces, Inter_Tight } from "next/font/google";
 import "./globals.css";
 import NavHeader from "@/components/NavHeader";
 import { LanguageProvider } from "@/lib/i18n/LanguageContext";
+import MessagingRoot from "@/components/messaging/MessagingRoot";
 
 const fraunces = Fraunces({
   subsets: ["latin"],
@@ -21,10 +22,13 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={`${fraunces.variable} ${interTight.variable} font-body bg-sand-50 text-teal-900`}>
+      <body
+        className={`${fraunces.variable} ${interTight.variable} font-body bg-sand-50 text-teal-900`}
+      >
         <LanguageProvider>
           <NavHeader />
           {children}
+          <MessagingRoot />
         </LanguageProvider>
       </body>
     </html>

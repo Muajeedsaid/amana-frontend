@@ -21,6 +21,9 @@ import {
 
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 
+import InboxPanel from '@/components/messaging/InboxPanel';
+import { useUnreadMessages } from '@/lib/hooks/useUnreadMessages';
+
 /* =========================================================
    ICONS
 ========================================================= */
@@ -582,6 +585,27 @@ export default function DashboardPage() {
   });
 
   const markDirty = () => setDirty(true);
+
+  /* ---- messages from customers ---- */
+  const {
+    count: unreadMessages,
+    items: unreadConversations,
+  } = useUnreadMessages(Boolean(user));
+  const [focusConversationId, setFocusConversationId] = useState<string | null>(null);
+
+  // Opened from a notification elsewhere: /dashboard?section=messages&c=<conversation>
+  useEffect(() => {
+    const query = new URLSearchParams(window.location.search);
+
+    if (query.get('section') === 'messages') {
+      setActiveSection('messages');
+
+      const conversation = query.get('c');
+      if (conversation) setFocusConversationId(conversation);
+
+      window.history.replaceState(null, '', window.location.pathname);
+    }
+  }, []);
 
   /* =========================================================
      AUTH
@@ -1170,7 +1194,12 @@ export default function DashboardPage() {
       icon: 'briefcase',
       badge: newRequests || undefined,
     },
-    { id: 'messages', label: t('dash.nav.messages'), icon: 'message' },
+    {
+      id: 'messages',
+      label: t('dash.nav.messages'),
+      icon: 'message',
+      badge: unreadMessages || undefined,
+    },
     { id: 'profile', label: t('dash.nav.profile'), icon: 'user' },
     { id: 'portfolio', label: t('dash.nav.portfolio'), icon: 'image' },
     { id: 'reviews', label: t('dash.nav.reviews'), icon: 'star' },
@@ -1374,10 +1403,21 @@ export default function DashboardPage() {
 
         <div className="flex items-center gap-2 sm:gap-3">
           <button
-            className="h-10 w-10 rounded-xl border border-[#0F4C45]/10 bg-white text-[#0F4C45] flex items-center justify-center hover:border-[#0F4C45]/30 transition"
+            onClick={() => {
+              // Straight to the newest unread message.
+              setFocusConversationId(unreadConversations[0]?._id ?? null);
+              navigateTo('messages');
+            }}
+            className="relative h-10 w-10 rounded-xl border border-[#0F4C45]/10 bg-white text-[#0F4C45] flex items-center justify-center hover:border-[#0F4C45]/30 transition"
             title={t('dash.top.notifications')}
           >
             <Icon name="bell" size={18} />
+
+            {unreadMessages > 0 && (
+              <span className="absolute -right-1.5 -top-1.5 min-w-5 h-5 px-1.5 rounded-full bg-[#C85A3F] text-white text-[10px] font-bold flex items-center justify-center ring-2 ring-[#F8F3E8]">
+                {unreadMessages > 99 ? '99+' : unreadMessages}
+              </span>
+            )}
           </button>
 
           {isArtisan && myProfile && (
@@ -1972,15 +2012,10 @@ export default function DashboardPage() {
           description={t('dash.messages.desc')}
         />
 
-        <section className="bg-white rounded-3xl border border-[#0F4C45]/10 min-h-[500px] flex items-center justify-center p-8">
-          <EmptyState
-            icon="message"
-            title={t('dash.messages.emptyTitle')}
-            description={t('dash.messages.emptyText')}
-            actionLabel={t('dash.messages.goJobs')}
-            onAction={() => navigateTo('jobs')}
-          />
-        </section>
+        <InboxPanel
+          focusConversationId={focusConversationId}
+          emptyText={t('msg.inbox.emptyArtisan')}
+        />
       </div>
     );
   }
